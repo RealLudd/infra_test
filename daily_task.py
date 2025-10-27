@@ -5,29 +5,37 @@ This script can be scheduled with Windows Task Scheduler
 from datetime import datetime
 import time
 
+def print_header():
+    """Print the BPA header with chicken ASCII art"""
+    print("\n")
+    print("    ========================================================")
+    print("    ||                      B P A                        ||")
+    print("    ========================================================")
+    print("")
+    print("                       _/~\\_")
+    print("                      ( o.o )")
+    print("                       > ^ <")
+    print("                    /|      |\\")
+    print("                   / |      | \\")
+    print("                  /  |      |  \\")
+    print("                 /   ========   \\")
+    print("")
+    print("    ========================================================")
+    print("")
+
 def main():
-    """Main task - modify the messages via Claude mobile!"""
-    print("="*60)
-    print(f"Task started at: {datetime.now()}")
-    print("="*60)
+    """Main task - modify the message below via Claude mobile!"""
+    print_header()
     
-    # These messages can be changed from Claude mobile!
-    print("Hello Marco")
-    print("This message was last updated on: 2025-10-27")
-    print("Status: Running automated task...")
+    # === EDIT THIS MESSAGE FROM CLAUDE MOBILE! ===
+    print("    >> Hello Marco - Task Running Successfully!")
+    # ==============================================
     
-    # Simulate some work
-    print("\nProcessing...")
-    time.sleep(2)
-    
-    # More messages you can modify
-    print("Task completed successfully!")
-    print("Next scheduled run: Check Task Scheduler")
-    
-    print("="*60)
-    print(f"Task finished at: {datetime.now()}")
-    print("="*60)
-    print("\nWindow will stay open for 10 seconds...")
+    print("")
+    print(f"    Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    print("")
+    print("    ========================================================")
+    print("")
     
     # Keep window open for 10 seconds
     time.sleep(10)

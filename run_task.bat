@@ -1,64 +1,23 @@
 @echo off
 REM ============================================================
-REM Automated Task Runner with Git Pull
-REM This batch file pulls latest code and runs the Python script
+REM BPA Task Runner - Clean and Simple
 REM ============================================================
-
-echo.
-echo ============================================================
-echo  Automated Task Runner
-echo ============================================================
-echo  Time: %date% %time%
-echo ============================================================
-echo.
 
 REM Change to script directory
 cd /d "%~dp0"
-echo Current directory: %cd%
-echo.
 
-REM Pull latest changes from GitHub
-echo [1/2] Pulling latest code from GitHub...
-git fetch origin
-git pull
-echo.
+REM Sync with GitHub (silent)
+git fetch origin > nul 2>&1
+git pull > nul 2>&1
 
-REM Auto-merge any Claude branches
-echo [1.5/2] Checking for Claude branches to merge...
-for /f "tokens=*" %%b in ('git branch -r ^| findstr /C:"origin/claude/"') do (
-    echo Found Claude branch: %%b
-    git merge %%b --no-edit
-    echo Merged successfully!
-)
-echo.
-
-REM Check if pull was successful
-if %ERRORLEVEL% NEQ 0 (
-    echo ERROR: Git pull failed!
-    echo Please check your internet connection and Git setup.
-    pause
-    exit /b 1
+REM Auto-merge Claude branches (silent)
+for /f "tokens=*" %%b in ('git branch -r 2^>nul ^| findstr /C:"origin/claude/"') do (
+    git merge %%b --no-edit > nul 2>&1
 )
 
-REM Run the Python script
-echo [2/2] Running Python script...
+REM Run the Python script (this shows the output)
 python daily_task.py
-echo.
 
-REM Check if script ran successfully
-if %ERRORLEVEL% NEQ 0 (
-    echo ERROR: Python script failed!
-    pause
-    exit /b 1
-)
-
-echo ============================================================
-echo  Task completed successfully!
-echo ============================================================
-echo.
-echo Window will close in 10 seconds...
-echo.
-
-REM Wait 10 seconds so you can read the messages
+REM Wait 10 seconds
 ping 127.0.0.1 -n 11 > nul
 
