@@ -12,15 +12,21 @@ def print_header():
     print("    ||                      B P A                        ||")
     print("    ========================================================")
     print("")
-    print("                       _/~\\_")
-    print("                      ( o.o )")
-    print("                       > ^ <")
-    print("                    /|      |\\")
-    print("                   / |      | \\")
-    print("                  /  |      |  \\")
-    print("                 /   ========   \\")
+    print("                        ___")
+    print("                    ___( o)>")
+    print("                    \\ <_. )")
+    print("                     `---'")
     print("")
     print("    ========================================================")
+    print("")
+
+def countdown(seconds):
+    """Display a countdown timer"""
+    print(f"    Closing in: ", end="", flush=True)
+    for i in range(seconds, 0, -1):
+        print(f"{i}...", end="", flush=True)
+        time.sleep(1)
+    print("0")
     print("")
 
 def main():
@@ -37,8 +43,8 @@ def main():
     print("    ========================================================")
     print("")
     
-    # Keep window open for 10 seconds
-    time.sleep(10)
+    # Countdown before closing
+    countdown(10)
 
 if __name__ == "__main__":
     main()
