@@ -27,6 +27,10 @@ def main():
     print("="*60)
     print(f"Task finished at: {datetime.now()}")
     print("="*60)
+    print("\nWindow will stay open for 10 seconds...")
+    
+    # Keep window open for 10 seconds
+    time.sleep(10)
 
 if __name__ == "__main__":
     main()

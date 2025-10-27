@@ -46,7 +46,9 @@ echo ============================================================
 echo  Task completed successfully!
 echo ============================================================
 echo.
+echo Window will close in 10 seconds...
+echo.
 
-REM Uncomment the line below if you want to see output when run manually
-REM pause
+REM Wait 10 seconds so you can read the messages
+ping 127.0.0.1 -n 11 > nul
 
