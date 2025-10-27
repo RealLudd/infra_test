@@ -19,7 +19,17 @@ echo.
 
 REM Pull latest changes from GitHub
 echo [1/2] Pulling latest code from GitHub...
+git fetch origin
 git pull
+echo.
+
+REM Auto-merge any Claude branches
+echo [1.5/2] Checking for Claude branches to merge...
+for /f "tokens=*" %%b in ('git branch -r ^| findstr /C:"origin/claude/"') do (
+    echo Found Claude branch: %%b
+    git merge %%b --no-edit
+    echo Merged successfully!
+)
 echo.
 
 REM Check if pull was successful
