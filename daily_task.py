@@ -12,7 +12,7 @@ def main():
     print("="*60)
     
     # These messages can be changed from Claude mobile!
-    print("Hello from the scheduled task!")
+    print("Hello Marco")
     print("This message was last updated on: 2025-10-27")
     print("Status: Running automated task...")
     
