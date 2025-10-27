@@ -25,9 +25,11 @@ This script runs **silently every 20 seconds** in the background. It only shows 
 
 ### 4. Set Action
 - Select **"Start a program"**
-- Browse to: `run_task.bat` (in this folder)
+- Browse to: `run_invisible.vbs` (in this folder) ← **Use THIS, not .bat!**
 - **Important:** "Start in" = `C:\Users\SA_DE_RPA\infra_test`
 - Click **Next** → **Finish**
+
+**Note:** Using `run_invisible.vbs` instead of `run_task.bat` ensures **NO BLACK WINDOW** appears at all!
 
 ### 5. Configure Repeat Interval
 - Right-click your task → **Properties**
