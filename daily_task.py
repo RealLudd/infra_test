@@ -8,7 +8,7 @@ import time
 # ========================================
 # CONTROL FLAG - EDIT THIS FROM MOBILE!
 # ========================================
-SHOW_MESSAGE = True  # Change to True to show popup
+SHOW_MESSAGE = False  # Change to True to show popup
 # ========================================
 
 def print_header():
