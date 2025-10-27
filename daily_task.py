@@ -1,9 +1,15 @@
 """
-Simple Task Script - Modify this from Claude Mobile!
-This script can be scheduled with Windows Task Scheduler
+BPA Task Script - Runs silently every 20 seconds
+Only shows popup when you activate it from mobile!
 """
 from datetime import datetime
 import time
+
+# ========================================
+# CONTROL FLAG - EDIT THIS FROM MOBILE!
+# ========================================
+SHOW_MESSAGE = False  # Change to True to show popup
+# ========================================
 
 def print_header():
     """Print the BPA header with chicken ASCII art"""
@@ -30,11 +36,18 @@ def countdown(seconds):
     print("")
 
 def main():
-    """Main task - modify the message below via Claude mobile!"""
+    """Main task - runs every 20 seconds"""
+    
+    # Only show popup if SHOW_MESSAGE is True
+    if not SHOW_MESSAGE:
+        # Silent mode - do nothing, just exit
+        return
+    
+    # Show the message popup
     print_header()
     
     # === EDIT THIS MESSAGE FROM CLAUDE MOBILE! ===
-    print("    >> wtf bro")
+    print("    >> Hello Marco - Message Activated!")
     # ==============================================
     
     print("")
