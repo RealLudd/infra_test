@@ -28,7 +28,7 @@ def main():
     print_header()
     
     # === EDIT THIS MESSAGE FROM CLAUDE MOBILE! ===
-    print("    >> Hello Marco - Task Running Successfully!")
+    print("    >> wtf bro")
     # ==============================================
     
     print("")
