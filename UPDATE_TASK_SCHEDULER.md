@@ -31,6 +31,27 @@ Use `run_invisible.vbs` instead of `run_task.bat` in Task Scheduler!
 2. Watch carefully...
 3. **NO BLACK WINDOW!** ✅ Completely invisible!
 
+### Troubleshooting: If It Doesn't Work
+
+If the task fails to run:
+
+1. **Test manually first:**
+   - Double-click `run_invisible.vbs` in the folder
+   - Should be silent (nothing happens visually)
+   
+2. **Use debug version to see errors:**
+   - Temporarily use `run_invisible_debug.vbs` instead
+   - It will show a message box if there's an error
+   - Once you see what's wrong, switch back to `run_invisible.vbs`
+
+3. **Check "Start in" path:**
+   - Must be the full path: `C:\Users\SA_DE_RPA\infra_test`
+   - No quotes needed
+
+4. **Run with highest privileges:**
+   - In task properties → General tab
+   - Check "Run with highest privileges"
+
 ---
 
 ## ✨ What Changed?
