@@ -9,9 +9,10 @@ scriptDir = fso.GetParentFolderName(scriptPath)
 ' Create shell object
 Set WshShell = CreateObject("WScript.Shell")
 
-' Change to script directory and run the batch file invisibly
-WshShell.CurrentDirectory = scriptDir
-WshShell.Run """" & scriptDir & "\run_task.bat""", 0, False
+' Run the batch file in VISIBLE mode (window mode 1)
+' When SHOW_MESSAGE = False, window will flash briefly and close
+' When SHOW_MESSAGE = True, popup will stay visible
+WshShell.Run "cmd /c cd /d """ & scriptDir & """ && run_task.bat", 1, False
 
 ' Clean up
 Set WshShell = Nothing
