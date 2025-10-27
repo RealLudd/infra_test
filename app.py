@@ -65,13 +65,13 @@ def get_category_distribution():
 
 if __name__ == "__main__":
     print("\n" + "="*60)
-    print("🚀 Dashboard Server Starting!")
+    print("Dashboard Server Starting!")
     print("="*60)
-    print("📊 Open your browser and go to:")
-    print("   👉 http://localhost:5000")
-    print("\n💡 To share with colleagues on your network:")
-    print("   👉 http://YOUR_IP_ADDRESS:5000")
-    print("\n⚡ Press CTRL+C to stop the server")
+    print("Open your browser and go to:")
+    print("   => http://localhost:5000")
+    print("\nTo share with colleagues on your network:")
+    print("   => http://YOUR_IP_ADDRESS:5000")
+    print("\nPress CTRL+C to stop the server")
     print("="*60 + "\n")
     
     app.run(debug=True, host='0.0.0.0', port=5000)
