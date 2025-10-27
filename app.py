@@ -63,6 +63,23 @@ def get_category_distribution():
         ]
     })
 
+@app.route('/api/revenue-growth')
+def get_revenue_growth():
+    """API endpoint for revenue growth chart"""
+    quarters = ['Q1 2024', 'Q2 2024', 'Q3 2024', 'Q4 2024', 'Q1 2025', 'Q2 2025']
+    # Generate realistic revenue growth with upward trend
+    base_revenue = 100000
+    revenue = []
+    for i in range(6):
+        growth_factor = 1 + (i * 0.15)  # 15% growth per quarter
+        variance = random.uniform(-0.1, 0.1)  # +/- 10% variance
+        revenue.append(int(base_revenue * growth_factor * (1 + variance)))
+
+    return jsonify({
+        'labels': quarters,
+        'revenue': revenue
+    })
+
 if __name__ == "__main__":
     print("\n" + "="*60)
     print("Dashboard Server Starting!")

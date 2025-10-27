@@ -217,15 +217,9 @@
                 <h3 class="chart-title">🎯 Category Distribution</h3>
                 <canvas id="categoryChart"></canvas>
             </div>
-            <div class="chart-card" style="display: flex; align-items: center; justify-content: center; min-height: 300px;">
-                <div style="text-align: center;">
-                    <div style="font-size: 4em; margin-bottom: 20px;">🎉</div>
-                    <h3 style="color: #667eea; margin-bottom: 10px;">Dashboard Ready!</h3>
-                    <p style="color: #666;">All systems operational</p>
-                    <p style="color: #999; font-size: 0.9em; margin-top: 10px;">
-                        Use Claude mobile to add more features!
-                    </p>
-                </div>
+            <div class="chart-card">
+                <h3 class="chart-title">💰 Revenue Growth</h3>
+                <canvas id="revenueChart"></canvas>
             </div>
         </div>
 
@@ -351,7 +345,7 @@
             try {
                 const response = await fetch('/api/category-distribution');
                 const data = await response.json();
-                
+
                 const ctx = document.getElementById('categoryChart').getContext('2d');
                 new Chart(ctx, {
                     type: 'doughnut',
@@ -385,13 +379,72 @@
             }
         }
 
+        // Create Revenue Growth Chart
+        async function createRevenueChart() {
+            try {
+                const response = await fetch('/api/revenue-growth');
+                const data = await response.json();
+
+                const ctx = document.getElementById('revenueChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.labels,
+                        datasets: [{
+                            label: 'Revenue ($)',
+                            data: data.revenue,
+                            borderColor: 'rgba(46, 213, 115, 1)',
+                            backgroundColor: 'rgba(46, 213, 115, 0.1)',
+                            borderWidth: 3,
+                            tension: 0.4,
+                            fill: true,
+                            pointBackgroundColor: 'rgba(46, 213, 115, 1)',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: {
+                                display: true,
+                                position: 'top'
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return 'Revenue: $' + context.parsed.y.toLocaleString();
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + (value / 1000) + 'K';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                console.error('Error creating revenue chart:', error);
+            }
+        }
+
         // Initialize dashboard
         window.addEventListener('load', () => {
             loadUserStats();
             createSalesChart();
             createPerformanceChart();
             createCategoryChart();
-            
+            createRevenueChart();
+
             // Auto-refresh stats every 5 seconds
             setInterval(loadUserStats, 5000);
         });
