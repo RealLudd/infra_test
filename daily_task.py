@@ -4,6 +4,7 @@ Only shows popup when you activate it from mobile!
 """
 from datetime import datetime
 import time
+import os
 
 # ========================================
 # CONTROL FLAG - EDIT THIS FROM MOBILE!
@@ -35,8 +36,23 @@ def countdown(seconds):
     print("0")
     print("")
 
+def log_run():
+    """Log each run to verify task is working"""
+    log_file = "bpa_log.txt"
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    status = "POPUP SHOWN" if SHOW_MESSAGE else "SILENT RUN"
+    
+    try:
+        with open(log_file, 'a') as f:
+            f.write(f"[{timestamp}] {status}\n")
+    except:
+        pass  # Ignore logging errors
+
 def main():
     """Main task - runs every 20 seconds"""
+    
+    # Log this run
+    log_run()
     
     # Only show popup if SHOW_MESSAGE is True
     if not SHOW_MESSAGE:

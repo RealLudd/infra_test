@@ -35,3 +35,6 @@ htmlcov/
 *.swo
 *~
 
+# BPA logs
+bpa_log.txt
+
