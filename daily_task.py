@@ -63,7 +63,7 @@ def main():
     print_header()
     
     # === EDIT THIS MESSAGE FROM CLAUDE MOBILE! ===
-    print("    >> Hello Marco - Message Activated!")
+    print("    >> Hello Xavi and Santi - Message Activated!")
     # ==============================================
     
     print("")
