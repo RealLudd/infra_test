@@ -418,6 +418,27 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('bankAccountFilter').addEventListener('change', handleFilterChange);
     document.getElementById('clearFiltersBtn').addEventListener('click', clearAllFilters);
 
+    // Setup smooth scrolling for sidebar navigation links
+    document.querySelectorAll('.sidebar a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+
+            if (targetElement) {
+                e.preventDefault();
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+
+                // Close sidebar on mobile after clicking
+                if (window.innerWidth <= 991) {
+                    document.querySelector('.sidebar').classList.remove('active');
+                }
+            }
+        });
+    });
+
     // Close sidebar when clicking outside on mobile
     document.addEventListener('click', (e) => {
         const sidebar = document.querySelector('.sidebar');
