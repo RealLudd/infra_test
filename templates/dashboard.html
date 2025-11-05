@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cash Operations Dashboard</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <h1>💰 Cash Operations Dashboard</h1>
+            <div class="period-selector">
+                <button class="period-btn active" data-period="today">Today</button>
+                <button class="period-btn" data-period="week">Week</button>
+                <button class="period-btn" data-period="month">Month</button>
+                <button class="period-btn" data-period="quarter">Quarter</button>
+            </div>
+        </header>
+
+        <!-- Section 1: Daily/Weekly Overview -->
+        <section class="dashboard-section">
+            <h2>🏠 Daily / Weekly Overview</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">💰</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Total Payments Received</div>
+                        <div class="metric-value" id="total-payments">-</div>
+                        <div class="metric-sublabel" id="total-value">-</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">⚙️</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Processed Automatically</div>
+                        <div class="metric-value" id="auto-processed-pct">-</div>
+                        <div class="metric-sublabel" id="auto-processed-count">-</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">📉</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Manual Workload</div>
+                        <div class="metric-value" id="manual-workload">-</div>
+                        <div class="metric-sublabel">Requires attention</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">💼</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Total Value Assigned</div>
+                        <div class="metric-value" id="total-value-assigned">-</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">⏱️</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Avg Time to Assign</div>
+                        <div class="metric-value" id="avg-time-auto">-</div>
+                        <div class="metric-sublabel" id="avg-time-manual">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>🟢 Automation % Over Time</h3>
+                <canvas id="automation-trend-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Section 2: Automation Efficiency & Impact -->
+        <section class="dashboard-section">
+            <h2>📊 Automation Efficiency & Impact</h2>
+            <div class="metrics-grid">
+                <div class="metric-card highlight">
+                    <div class="metric-icon">📈</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Automation Success Rate</div>
+                        <div class="metric-value" id="auto-success-rate">-</div>
+                    </div>
+                </div>
+
+                <div class="metric-card highlight">
+                    <div class="metric-icon">👥</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Manual Interventions Saved</div>
+                        <div class="metric-value" id="interventions-saved">-</div>
+                        <div class="metric-sublabel">this period</div>
+                    </div>
+                </div>
+
+                <div class="metric-card highlight">
+                    <div class="metric-icon">💸</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Time Saved</div>
+                        <div class="metric-value" id="time-saved">-</div>
+                        <div class="metric-sublabel" id="cost-saved">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="chart-container-half">
+                    <h3>⚙️ Match Type Distribution</h3>
+                    <canvas id="match-type-chart"></canvas>
+                </div>
+                <div class="chart-container-half">
+                    <h3>🔁 Reprocessing Success</h3>
+                    <canvas id="reprocessing-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Exceptions / Attention Points -->
+        <section class="dashboard-section">
+            <h2>🚨 Exceptions / Attention Points</h2>
+
+            <div class="exception-container">
+                <div class="exception-panel">
+                    <h3>⚠️ Top 5 Customers with Recurring Exceptions</h3>
+                    <table id="top-exceptions-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Exception Count</th>
+                                <th>Last Occurrence</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="3">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="exception-panel">
+                    <h3>⚠️ High-Value Unassigned Payments</h3>
+                    <table id="high-value-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Amount</th>
+                                <th>Days Pending</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="3">Loading...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card alert">
+                    <div class="metric-icon">⏳</div>
+                    <div class="metric-content">
+                        <div class="metric-label">SAP Posting Delayed</div>
+                        <div class="metric-value" id="sap-delayed">-</div>
+                    </div>
+                </div>
+
+                <div class="metric-card alert">
+                    <div class="metric-icon">📥</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Remittance Ingestion Delayed</div>
+                        <div class="metric-value" id="remittance-delayed">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>🟠 Error Reasons Breakdown</h3>
+                <canvas id="error-reasons-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Section 4: Remittance Insights -->
+        <section class="dashboard-section">
+            <h2>🧾 Remittance Insights</h2>
+
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-icon">📄</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Total Remittances Received</div>
+                        <div class="metric-value" id="total-remittances">-</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">✅</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Successfully Parsed</div>
+                        <div class="metric-value" id="parsed-pct">-</div>
+                        <div class="metric-sublabel" id="parsed-count">-</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">👁️</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Manual Review Required</div>
+                        <div class="metric-value" id="manual-review-pct">-</div>
+                        <div class="metric-sublabel" id="manual-review-count">-</div>
+                    </div>
+                </div>
+
+                <div class="metric-card">
+                    <div class="metric-icon">⏳</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Avg Processing Time</div>
+                        <div class="metric-value" id="avg-processing-time">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="charts-row">
+                <div class="chart-container-half">
+                    <h3>🟢 Processing Status</h3>
+                    <canvas id="remittance-status-chart"></canvas>
+                </div>
+                <div class="chart-container-half">
+                    <h3>🏢 Top 5 Customers by Volume</h3>
+                    <canvas id="customer-volume-chart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 5: Month-End Summary (CFO Snapshot) -->
+        <section class="dashboard-section">
+            <h2>📆 Month-End Summary (CFO Snapshot)</h2>
+
+            <div class="comparison-grid">
+                <div class="comparison-card">
+                    <div class="comparison-header">Current Month</div>
+                    <div class="comparison-metrics">
+                        <div class="comparison-item">
+                            <span class="label">Payments Processed</span>
+                            <span class="value" id="current-payments">-</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span class="label">Total Value</span>
+                            <span class="value" id="current-value">-</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span class="label">Automation Rate</span>
+                            <span class="value" id="current-auto-rate">-</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span class="label">Avg Assignment Delay</span>
+                            <span class="value" id="current-delay">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="comparison-card">
+                    <div class="comparison-header">Previous Month</div>
+                    <div class="comparison-metrics">
+                        <div class="comparison-item">
+                            <span class="label">Payments Processed</span>
+                            <span class="value" id="previous-payments">-</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span class="label">Total Value</span>
+                            <span class="value" id="previous-value">-</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span class="label">Automation Rate</span>
+                            <span class="value" id="previous-auto-rate">-</span>
+                        </div>
+                        <div class="comparison-item">
+                            <span class="label">Avg Assignment Delay</span>
+                            <span class="value" id="previous-delay">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metrics-grid">
+                <div class="metric-card success">
+                    <div class="metric-icon">📈</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Automation Rate Change</div>
+                        <div class="metric-value" id="auto-rate-change">-</div>
+                    </div>
+                </div>
+
+                <div class="metric-card success">
+                    <div class="metric-icon">⚡</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Delay Improvement</div>
+                        <div class="metric-value" id="delay-improvement">-</div>
+                    </div>
+                </div>
+
+                <div class="metric-card success">
+                    <div class="metric-icon">💰</div>
+                    <div class="metric-content">
+                        <div class="metric-label">Total Time Saved</div>
+                        <div class="metric-value" id="month-time-saved">-</div>
+                        <div class="metric-sublabel" id="month-cost-saved">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h3>🏅 Top Performing Rules</h3>
+                <canvas id="top-rules-chart"></canvas>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="dashboard-footer">
+            <p>Last updated: <span id="last-updated">-</span></p>
+            <p>Cash Operations Dashboard v1.0</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>
