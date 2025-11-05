@@ -134,10 +134,10 @@
                 <h3 class="section-title"><i class="fas fa-home"></i> Daily / Weekly Overview</h3>
 
                 <div class="stats-grid">
-                    <!-- Total Payments Received -->
+                    <!-- 1. Total Payments Received (Amount) -->
                     <div class="stat-card">
                         <div class="stat-header">
-                            <div class="stat-label">💰 Total Payments Received</div>
+                            <div class="stat-label">💰 Total Received (Amount)</div>
                             <div class="stat-icon income">
                                 <i class="fas fa-coins"></i>
                             </div>
@@ -145,12 +145,28 @@
                         <div class="stat-value" id="totalReceived">
                             <div class="spinner"></div>
                         </div>
-                        <div class="stat-info" id="paymentCount">
-                            <span>-- payments</span>
+                        <div class="stat-info">
+                            <span>Payment value</span>
                         </div>
                     </div>
 
-                    <!-- Automation Percentage -->
+                    <!-- 2. Total Payments Received (Number) -->
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">📊 Total Payments</div>
+                            <div class="stat-icon count">
+                                <i class="fas fa-hashtag"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="totalPayments">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="stat-info">
+                            <span>Payment count</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Processed Automatically (Percentage showing count) -->
                     <div class="stat-card">
                         <div class="stat-header">
                             <div class="stat-label">⚙️ Processed Automatically</div>
@@ -162,43 +178,59 @@
                             <div class="spinner"></div>
                         </div>
                         <div class="stat-info" id="automationDetail">
-                            <span>-- auto / -- manual</span>
+                            <span>-- / -- payments</span>
                         </div>
                     </div>
 
-                    <!-- Unassigned Workload -->
+                    <!-- 4. Number of Payments Assigned to Customer Account (%) -->
                     <div class="stat-card">
                         <div class="stat-header">
-                            <div class="stat-label">📉 Unassigned Workload</div>
-                            <div class="stat-icon expense">
-                                <i class="fas fa-exclamation-triangle"></i>
+                            <div class="stat-label">👥 Assigned to Accounts</div>
+                            <div class="stat-icon success">
+                                <i class="fas fa-user-check"></i>
                             </div>
                         </div>
-                        <div class="stat-value warning" id="unassignedCount">
+                        <div class="stat-value success" id="assignedAccountPercentage">
                             <div class="spinner"></div>
                         </div>
-                        <div class="stat-info" id="unassignedValue">
-                            <span>$-- value</span>
+                        <div class="stat-info" id="assignedAccountDetail">
+                            <span>-- / -- payments</span>
                         </div>
                     </div>
 
-                    <!-- Total Value Assigned -->
+                    <!-- 5. Number of Invoices Assigned from Customer -->
                     <div class="stat-card">
                         <div class="stat-header">
-                            <div class="stat-label">💼 Total Value Assigned</div>
+                            <div class="stat-label">📄 Invoices Assigned</div>
+                            <div class="stat-icon income">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="totalInvoices">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="stat-info">
+                            <span>Total invoices</span>
+                        </div>
+                    </div>
+
+                    <!-- 6. Total Value Assigned (%) -->
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">💼 Value Assigned</div>
                             <div class="stat-icon count">
                                 <i class="fas fa-check-circle"></i>
                             </div>
                         </div>
-                        <div class="stat-value" id="totalAssigned">
+                        <div class="stat-value" id="valueAssignedPercentage">
                             <div class="spinner"></div>
                         </div>
-                        <div class="stat-info" id="assignedPercentage">
-                            <span>-- of total</span>
+                        <div class="stat-info" id="valueAssignedAmount">
+                            <span>$-- of total</span>
                         </div>
                     </div>
 
-                    <!-- Average Auto Time -->
+                    <!-- 7. Average Time (Automation) -->
                     <div class="stat-card">
                         <div class="stat-header">
                             <div class="stat-label">⏱️ Avg Time (Automation)</div>
@@ -207,22 +239,6 @@
                             </div>
                         </div>
                         <div class="stat-value success" id="avgAutoTime">
-                            <div class="spinner"></div>
-                        </div>
-                        <div class="stat-info">
-                            <span>minutes</span>
-                        </div>
-                    </div>
-
-                    <!-- Average Manual Time -->
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-label">⏱️ Avg Time (Manual)</div>
-                            <div class="stat-icon warning">
-                                <i class="fas fa-hourglass-half"></i>
-                            </div>
-                        </div>
-                        <div class="stat-value warning" id="avgManualTime">
                             <div class="spinner"></div>
                         </div>
                         <div class="stat-info">
@@ -253,9 +269,6 @@
             <div class="transactions-card">
                 <div class="card-header">
                     <h3><i class="fas fa-history"></i> Recent Transactions</h3>
-                    <button class="btn">
-                        <i class="fas fa-plus"></i> Add Transaction
-                    </button>
                 </div>
 
                 <ul class="transaction-list" id="transactionList">

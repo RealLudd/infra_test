@@ -11,28 +11,31 @@ app = Flask(__name__)
 
 # Enhanced sample data with automation tracking
 # Bank account configurations represent unique combinations of company_code + housebank + currency
+# automation_system: PACO or FRAN (for automated transactions only)
+# customer_id: customer identifier for assignment tracking
+# invoices_assigned: number of invoices assigned from customer
 transactions = [
-    {"id": 1, "date": "2025-10-15", "description": "Client Payment A", "amount": 5000, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0014", "housebank": "1450I", "currency": "GBP2"},
-    {"id": 2, "date": "2025-10-16", "description": "Client Payment B", "amount": 3200, "type": "income", "automated": True, "assigned_minutes": 1, "company_code": "0010", "housebank": "1050D", "currency": "EUR"},
-    {"id": 3, "date": "2025-10-18", "description": "Client Payment C", "amount": 1800, "type": "income", "automated": False, "assigned_minutes": 45, "company_code": "0018", "housebank": "1850I", "currency": "EUR"},
-    {"id": 4, "date": "2025-10-20", "description": "Client Payment D", "amount": 4500, "type": "income", "automated": True, "assigned_minutes": 3, "company_code": "0015", "housebank": "CIT01", "currency": "OP272"},
-    {"id": 5, "date": "2025-10-22", "description": "Client Payment E", "amount": 2700, "type": "income", "automated": False, "assigned_minutes": 62, "company_code": "0024", "housebank": "2439I", "currency": "NOK_2"},
-    {"id": 6, "date": "2025-10-25", "description": "Client Payment F", "amount": 6200, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0040", "housebank": "SAN01", "currency": "OP464"},
-    {"id": 7, "date": "2025-10-28", "description": "Client Payment G", "amount": 3900, "type": "income", "automated": True, "assigned_minutes": 1, "company_code": "0033", "housebank": "3350I", "currency": "EUR"},
-    {"id": 8, "date": "2025-10-30", "description": "Client Payment H", "amount": 5500, "type": "income", "automated": False, "assigned_minutes": 38, "company_code": "0033", "housebank": "3350I", "currency": "USD"},
-    {"id": 9, "date": "2025-11-01", "description": "Client Payment I", "amount": 4800, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0012", "housebank": "570BE", "currency": "EUR"},
-    {"id": 10, "date": "2025-11-02", "description": "Client Payment J", "amount": 7100, "type": "income", "automated": True, "assigned_minutes": 1, "company_code": "0026", "housebank": "2602D", "currency": "PLN"},
-    {"id": 11, "date": "2025-11-03", "description": "Client Payment K", "amount": 3300, "type": "income", "automated": False, "assigned_minutes": 52, "company_code": "0041", "housebank": "4150I", "currency": "EUR"},
-    {"id": 12, "date": "2025-11-04", "description": "Client Payment L", "amount": 5900, "type": "income", "automated": True, "assigned_minutes": 3, "company_code": "0040", "housebank": "4050I", "currency": "EUR"},
-    {"id": 13, "date": "2025-11-05", "description": "Client Payment M", "amount": 4200, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0042", "housebank": "4234D", "currency": "EUR"},
-    {"id": 14, "date": "2025-11-05", "description": "Client Payment N", "amount": 2800, "type": "income", "automated": None, "assigned_minutes": None, "company_code": "0044", "housebank": "4450I", "currency": "CZK"},
-    {"id": 15, "date": "2025-11-05", "description": "Client Payment O", "amount": 3600, "type": "income", "automated": None, "assigned_minutes": None, "company_code": "0043", "housebank": "4350I", "currency": "EUR"},
-    {"id": 16, "date": "2025-11-01", "description": "Client Payment P", "amount": 5200, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0041", "housebank": "4175I", "currency": "EUR"},
-    {"id": 17, "date": "2025-11-02", "description": "Client Payment Q", "amount": 4100, "type": "income", "automated": True, "assigned_minutes": 1, "company_code": "0043", "housebank": "4335I", "currency": "EUR"},
-    {"id": 18, "date": "2025-11-03", "description": "Client Payment R", "amount": 6300, "type": "income", "automated": False, "assigned_minutes": 48, "company_code": "0019", "housebank": "1939I", "currency": "EUR"},
-    {"id": 19, "date": "2025-11-04", "description": "Client Payment S", "amount": 3800, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0011", "housebank": "1101I", "currency": "CHF"},
-    {"id": 20, "date": "2025-11-04", "description": "Client Payment T", "amount": 4900, "type": "income", "automated": True, "assigned_minutes": 1, "company_code": "0022", "housebank": "2239X", "currency": "SEK"},
-    {"id": 21, "date": "2025-11-05", "description": "Client Payment U", "amount": 5100, "type": "income", "automated": False, "assigned_minutes": 55, "company_code": "0011", "housebank": "1101D", "currency": "CHF"},
+    {"id": 1, "date": "2025-10-15", "description": "Remittance cleared for Customer 89732", "amount": 5000, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 2, "company_code": "0014", "housebank": "1450I", "currency": "GBP2", "customer_id": "89732", "invoices_assigned": 3, "assigned_to_account": True},
+    {"id": 2, "date": "2025-10-16", "description": "Remittance cleared for Customer 45891", "amount": 3200, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 1, "company_code": "0010", "housebank": "1050D", "currency": "EUR", "customer_id": "45891", "invoices_assigned": 2, "assigned_to_account": True},
+    {"id": 3, "date": "2025-10-18", "description": "Remittance cleared for Customer 12456", "amount": 1800, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 45, "company_code": "0018", "housebank": "1850I", "currency": "EUR", "customer_id": "12456", "invoices_assigned": 1, "assigned_to_account": True},
+    {"id": 4, "date": "2025-10-20", "description": "Remittance cleared for Customer 78234", "amount": 4500, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 3, "company_code": "0015", "housebank": "CIT01", "currency": "OP272", "customer_id": "78234", "invoices_assigned": 4, "assigned_to_account": True},
+    {"id": 5, "date": "2025-10-22", "description": "Remittance cleared for Customer 56789", "amount": 2700, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 62, "company_code": "0024", "housebank": "2439I", "currency": "NOK_2", "customer_id": "56789", "invoices_assigned": 2, "assigned_to_account": True},
+    {"id": 6, "date": "2025-10-25", "description": "Remittance cleared for Customer 90123", "amount": 6200, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 2, "company_code": "0040", "housebank": "SAN01", "currency": "OP464", "customer_id": "90123", "invoices_assigned": 5, "assigned_to_account": True},
+    {"id": 7, "date": "2025-10-28", "description": "Remittance cleared for Customer 34567", "amount": 3900, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 1, "company_code": "0033", "housebank": "3350I", "currency": "EUR", "customer_id": "34567", "invoices_assigned": 2, "assigned_to_account": True},
+    {"id": 8, "date": "2025-10-30", "description": "Remittance cleared for Customer 23890", "amount": 5500, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 38, "company_code": "0033", "housebank": "3350I", "currency": "USD", "customer_id": "23890", "invoices_assigned": 3, "assigned_to_account": True},
+    {"id": 9, "date": "2025-11-01", "description": "Remittance cleared for Customer 67812", "amount": 4800, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 2, "company_code": "0012", "housebank": "570BE", "currency": "EUR", "customer_id": "67812", "invoices_assigned": 3, "assigned_to_account": True},
+    {"id": 10, "date": "2025-11-02", "description": "Remittance cleared for Customer 98765", "amount": 7100, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 1, "company_code": "0026", "housebank": "2602D", "currency": "PLN", "customer_id": "98765", "invoices_assigned": 6, "assigned_to_account": True},
+    {"id": 11, "date": "2025-11-03", "description": "Remittance cleared for Customer 45678", "amount": 3300, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 52, "company_code": "0041", "housebank": "4150I", "currency": "EUR", "customer_id": "45678", "invoices_assigned": 2, "assigned_to_account": True},
+    {"id": 12, "date": "2025-11-04", "description": "Remittance cleared for Customer 12389", "amount": 5900, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 3, "company_code": "0040", "housebank": "4050I", "currency": "EUR", "customer_id": "12389", "invoices_assigned": 4, "assigned_to_account": True},
+    {"id": 13, "date": "2025-11-05", "description": "Remittance cleared for Customer 78901", "amount": 4200, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 2, "company_code": "0042", "housebank": "4234D", "currency": "EUR", "customer_id": "78901", "invoices_assigned": 3, "assigned_to_account": True},
+    {"id": 14, "date": "2025-11-05", "description": "Pending remittance for Customer 56123", "amount": 2800, "type": "income", "automated": None, "automation_system": None, "assigned_minutes": None, "company_code": "0044", "housebank": "4450I", "currency": "CZK", "customer_id": None, "invoices_assigned": 0, "assigned_to_account": False},
+    {"id": 15, "date": "2025-11-05", "description": "Pending remittance for Customer 89456", "amount": 3600, "type": "income", "automated": None, "automation_system": None, "assigned_minutes": None, "company_code": "0043", "housebank": "4350I", "currency": "EUR", "customer_id": None, "invoices_assigned": 0, "assigned_to_account": False},
+    {"id": 16, "date": "2025-11-01", "description": "Remittance cleared for Customer 23456", "amount": 5200, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 2, "company_code": "0041", "housebank": "4175I", "currency": "EUR", "customer_id": "23456", "invoices_assigned": 4, "assigned_to_account": True},
+    {"id": 17, "date": "2025-11-02", "description": "Remittance cleared for Customer 34789", "amount": 4100, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 1, "company_code": "0043", "housebank": "4335I", "currency": "EUR", "customer_id": "34789", "invoices_assigned": 3, "assigned_to_account": True},
+    {"id": 18, "date": "2025-11-03", "description": "Remittance cleared for Customer 91234", "amount": 6300, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 48, "company_code": "0019", "housebank": "1939I", "currency": "EUR", "customer_id": "91234", "invoices_assigned": 5, "assigned_to_account": True},
+    {"id": 19, "date": "2025-11-04", "description": "Remittance cleared for Customer 67890", "amount": 3800, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 2, "company_code": "0011", "housebank": "1101I", "currency": "CHF", "customer_id": "67890", "invoices_assigned": 2, "assigned_to_account": True},
+    {"id": 20, "date": "2025-11-04", "description": "Remittance cleared for Customer 45123", "amount": 4900, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 1, "company_code": "0022", "housebank": "2239X", "currency": "SEK", "customer_id": "45123", "invoices_assigned": 3, "assigned_to_account": True},
+    {"id": 21, "date": "2025-11-05", "description": "Remittance cleared for Customer 78456", "amount": 5100, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 55, "company_code": "0011", "housebank": "1101D", "currency": "CHF", "customer_id": "78456", "invoices_assigned": 4, "assigned_to_account": True},
 ]
 
 @app.route('/')
@@ -153,8 +156,16 @@ def get_overview():
     avg_auto_time = sum(auto_times) / len(auto_times) if auto_times else 0
     avg_manual_time = sum(manual_times) / len(manual_times) if manual_times else 0
 
-    # Calculate values
-    total_assigned_value = sum(t['amount'] for t in filtered if t.get('automated') is not None)
+    # Customer account assignment metrics
+    assigned_to_account = [t for t in filtered if t.get('assigned_to_account') == True]
+    assigned_percentage = (len(assigned_to_account) / total_payments * 100) if total_payments > 0 else 0
+
+    # Invoice assignment metrics
+    total_invoices_assigned = sum(t.get('invoices_assigned', 0) for t in filtered)
+
+    # Value assignment metrics
+    total_assigned_value = sum(t['amount'] for t in assigned_to_account)
+    value_assigned_percentage = (total_assigned_value / total_received * 100) if total_received > 0 else 0
     unassigned_value = sum(t['amount'] for t in unassigned)
 
     return jsonify({
@@ -166,7 +177,11 @@ def get_overview():
         'manual_count': len(manual),
         'unassigned_count': len(unassigned),
         'unassigned_value': unassigned_value,
+        'assigned_percentage': round(assigned_percentage, 1),
+        'assigned_count': len(assigned_to_account),
+        'total_invoices_assigned': total_invoices_assigned,
         'total_assigned_value': total_assigned_value,
+        'value_assigned_percentage': round(value_assigned_percentage, 1),
         'avg_auto_time_minutes': round(avg_auto_time, 1),
         'avg_manual_time_minutes': round(avg_manual_time, 1),
     })
@@ -199,12 +214,12 @@ def get_automation_trend():
         days = 7
         start_date = today - timedelta(days=days)
 
-    # Group transactions by date
+    # Group transactions by date - track PACO and FRAN separately
     date_groups = {}
     current_date = start_date
     while current_date <= today:
         date_str = current_date.strftime('%Y-%m-%d')
-        date_groups[date_str] = {'automated': 0, 'manual': 0, 'total': 0}
+        date_groups[date_str] = {'paco': 0, 'fran': 0, 'manual': 0, 'total': 0}
         current_date += timedelta(days=1)
 
     # Count transactions per day with filtering
@@ -219,19 +234,25 @@ def get_automation_trend():
             if t_date in date_groups:
                 date_groups[t_date]['total'] += 1
                 if t.get('automated'):
-                    date_groups[t_date]['automated'] += 1
+                    automation_system = t.get('automation_system', '')
+                    if automation_system == 'PACO':
+                        date_groups[t_date]['paco'] += 1
+                    elif automation_system == 'FRAN':
+                        date_groups[t_date]['fran'] += 1
                 else:
                     date_groups[t_date]['manual'] += 1
 
-    # Calculate automation percentage per day
+    # Calculate automation percentages per day for PACO and FRAN
     labels = []
-    automation_percentages = []
+    paco_percentages = []
+    fran_percentages = []
     payment_counts = []
 
     for date_str in sorted(date_groups.keys()):
         data = date_groups[date_str]
         total = data['total']
-        auto_pct = (data['automated'] / total * 100) if total > 0 else 0
+        paco_pct = (data['paco'] / total * 100) if total > 0 else 0
+        fran_pct = (data['fran'] / total * 100) if total > 0 else 0
 
         # Format label based on period
         date_obj = datetime.strptime(date_str, '%Y-%m-%d')
@@ -243,12 +264,14 @@ def get_automation_trend():
             label = date_obj.strftime('%m/%d')
 
         labels.append(label)
-        automation_percentages.append(round(auto_pct, 1))
+        paco_percentages.append(round(paco_pct, 1))
+        fran_percentages.append(round(fran_pct, 1))
         payment_counts.append(total)
 
     return jsonify({
         'labels': labels,
-        'automation_percentages': automation_percentages,
+        'paco_percentages': paco_percentages,
+        'fran_percentages': fran_percentages,
         'payment_counts': payment_counts
     })
 

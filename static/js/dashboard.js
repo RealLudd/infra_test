@@ -29,35 +29,33 @@ async function loadOverview() {
         const response = await fetch(`/api/overview?${params}`);
         const data = await response.json();
 
-        // Update Total Payments Received
+        // 1. Update Total Payments Received (Amount)
         updateStatValue('totalReceived', formatCurrency(data.total_received));
-        document.getElementById('paymentCount').innerHTML =
-            `<span>${data.total_payments} payment${data.total_payments !== 1 ? 's' : ''}</span>`;
 
-        // Update Automation Percentage
+        // 2. Update Total Payments (Number)
+        updateStatValue('totalPayments', data.total_payments.toString());
+
+        // 3. Update Processed Automatically
         updateStatValue('automationPercentage', `${data.automation_percentage}%`);
         document.getElementById('automationDetail').innerHTML =
-            `<span>${data.automated_count} auto / ${data.manual_count} manual</span>`;
+            `<span>${data.automated_count} / ${data.total_payments} payments</span>`;
 
-        // Update Unassigned Workload
-        updateStatValue('unassignedCount', data.unassigned_count.toString());
-        document.getElementById('unassignedValue').innerHTML =
-            `<span>${formatCurrency(data.unassigned_value)} value</span>`;
+        // 4. Update Payments Assigned to Customer Account
+        updateStatValue('assignedAccountPercentage', `${data.assigned_percentage}%`);
+        document.getElementById('assignedAccountDetail').innerHTML =
+            `<span>${data.assigned_count} / ${data.total_payments} payments</span>`;
 
-        // Update Total Value Assigned
-        updateStatValue('totalAssigned', formatCurrency(data.total_assigned_value));
-        const assignedPct = data.total_received > 0
-            ? ((data.total_assigned_value / data.total_received) * 100).toFixed(1)
-            : 0;
-        document.getElementById('assignedPercentage').innerHTML =
-            `<span>${assignedPct}% of total</span>`;
+        // 5. Update Number of Invoices Assigned
+        updateStatValue('totalInvoices', data.total_invoices_assigned.toString());
 
-        // Update Average Times
+        // 6. Update Total Value Assigned (%)
+        updateStatValue('valueAssignedPercentage', `${data.value_assigned_percentage}%`);
+        document.getElementById('valueAssignedAmount').innerHTML =
+            `<span>${formatCurrency(data.total_assigned_value)} of total</span>`;
+
+        // 7. Update Average Time (Automation)
         updateStatValue('avgAutoTime', data.avg_auto_time_minutes > 0
             ? data.avg_auto_time_minutes.toFixed(1)
-            : '0');
-        updateStatValue('avgManualTime', data.avg_manual_time_minutes > 0
-            ? data.avg_manual_time_minutes.toFixed(1)
             : '0');
 
     } catch (error) {
@@ -92,29 +90,49 @@ function renderAutomationChart(data) {
         automationChart.destroy();
     }
 
-    // Create gradient for line
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(29, 140, 248, 0.4)');
-    gradient.addColorStop(1, 'rgba(29, 140, 248, 0.0)');
+    // Create gradients for PACO and FRAN lines
+    const pacoGradient = ctx.createLinearGradient(0, 0, 0, 400);
+    pacoGradient.addColorStop(0, 'rgba(29, 140, 248, 0.3)');
+    pacoGradient.addColorStop(1, 'rgba(29, 140, 248, 0.0)');
+
+    const franGradient = ctx.createLinearGradient(0, 0, 0, 400);
+    franGradient.addColorStop(0, 'rgba(225, 78, 202, 0.3)');
+    franGradient.addColorStop(1, 'rgba(225, 78, 202, 0.0)');
 
     automationChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.labels,
-            datasets: [{
-                label: 'Automation %',
-                data: data.automation_percentages,
-                borderColor: '#1d8cf8',
-                backgroundColor: gradient,
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: '#1d8cf8',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-            }]
+            datasets: [
+                {
+                    label: 'PACO Automation %',
+                    data: data.paco_percentages,
+                    borderColor: '#1d8cf8',
+                    backgroundColor: pacoGradient,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#1d8cf8',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                },
+                {
+                    label: 'FRAN Automation %',
+                    data: data.fran_percentages,
+                    borderColor: '#e14eca',
+                    backgroundColor: franGradient,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#e14eca',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -139,16 +157,17 @@ function renderAutomationChart(data) {
                     borderColor: '#2b3553',
                     borderWidth: 1,
                     padding: 12,
-                    displayColors: false,
+                    displayColors: true,
                     callbacks: {
                         label: function(context) {
-                            const index = context.dataIndex;
+                            const systemName = context.dataset.label.split(' ')[0]; // Get PACO or FRAN
                             const percentage = context.parsed.y;
+                            return `${systemName}: ${percentage}%`;
+                        },
+                        footer: function(tooltipItems) {
+                            const index = tooltipItems[0].dataIndex;
                             const count = data.payment_counts[index];
-                            return [
-                                `Automation: ${percentage}%`,
-                                `Payments: ${count}`
-                            ];
+                            return `Total Payments: ${count}`;
                         }
                     }
                 }
