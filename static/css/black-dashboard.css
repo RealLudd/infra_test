@@ -489,3 +489,174 @@ body {
         display: block;
     }
 }
+
+/* Period Selector */
+.period-selector {
+    background: linear-gradient(135deg, var(--card-bg) 0%, #2b3553 100%);
+    border-radius: 12px;
+    padding: 20px 25px;
+    margin-bottom: 25px;
+    border: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.period-header h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.period-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.period-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.period-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    transform: translateY(-2px);
+}
+
+.period-btn.active {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 4px 15px rgba(225, 78, 202, 0.4);
+}
+
+/* Overview Section */
+.overview-section {
+    margin-bottom: 30px;
+}
+
+.section-title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+    padding-left: 5px;
+}
+
+/* Stat Info */
+.stat-info {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+}
+
+/* Stat Value Variants */
+.stat-value.success {
+    color: var(--success-color);
+}
+
+.stat-value.warning {
+    color: var(--warning-color);
+}
+
+.stat-value.danger {
+    color: var(--danger-color);
+}
+
+.stat-icon.success {
+    background: linear-gradient(135deg, rgba(0, 242, 195, 0.2), rgba(0, 242, 195, 0.05));
+    color: var(--success-color);
+}
+
+.stat-icon.warning {
+    background: linear-gradient(135deg, rgba(255, 141, 114, 0.2), rgba(255, 141, 114, 0.05));
+    color: var(--warning-color);
+}
+
+/* Chart Section */
+.chart-section {
+    margin-bottom: 30px;
+}
+
+.chart-container {
+    padding: 20px;
+    position: relative;
+    height: 400px;
+}
+
+.chart-period-toggle {
+    display: flex;
+    gap: 8px;
+}
+
+.chart-period-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.chart-period-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.chart-period-btn.active {
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+    border-color: var(--secondary-color);
+    color: white;
+    box-shadow: 0 3px 10px rgba(29, 140, 248, 0.3);
+}
+
+/* Responsive Updates */
+@media (max-width: 768px) {
+    .period-selector {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .period-buttons {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+
+    .period-btn {
+        flex: 1;
+        min-width: 70px;
+    }
+
+    .chart-container {
+        height: 300px;
+        padding: 15px 10px;
+    }
+
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .chart-period-toggle {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .chart-period-btn {
+        flex: 1;
+    }
+}

@@ -11,6 +11,9 @@
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
     <!-- Custom CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/black-dashboard.css') }}">
 </head>
@@ -93,73 +96,135 @@
 
         <!-- Main Content -->
         <div class="content">
-            <!-- Stats Grid -->
-            <div class="stats-grid">
-                <!-- Total Income Card -->
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-label">Total Income</div>
-                        <div class="stat-icon income">
-                            <i class="fas fa-arrow-up"></i>
+            <!-- Period Toggle -->
+            <div class="period-selector">
+                <div class="period-header">
+                    <h3><i class="fas fa-calendar-alt"></i> Time Period</h3>
+                </div>
+                <div class="period-buttons">
+                    <button class="period-btn" data-period="today">Today</button>
+                    <button class="period-btn active" data-period="week">Week</button>
+                    <button class="period-btn" data-period="month">Month</button>
+                    <button class="period-btn" data-period="quarter">Quarter</button>
+                </div>
+            </div>
+
+            <!-- Daily/Weekly Overview -->
+            <div class="overview-section">
+                <h3 class="section-title"><i class="fas fa-home"></i> Daily / Weekly Overview</h3>
+
+                <div class="stats-grid">
+                    <!-- Total Payments Received -->
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">💰 Total Payments Received</div>
+                            <div class="stat-icon income">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="totalReceived">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="stat-info" id="paymentCount">
+                            <span>-- payments</span>
                         </div>
                     </div>
-                    <div class="stat-value" id="totalIncome">
-                        <div class="spinner"></div>
+
+                    <!-- Automation Percentage -->
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">⚙️ Processed Automatically</div>
+                            <div class="stat-icon net">
+                                <i class="fas fa-robot"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="automationPercentage">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="stat-info" id="automationDetail">
+                            <span>-- auto / -- manual</span>
+                        </div>
                     </div>
-                    <div class="stat-trend">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>+12.5% from last month</span>
+
+                    <!-- Unassigned Workload -->
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">📉 Unassigned Workload</div>
+                            <div class="stat-icon expense">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value warning" id="unassignedCount">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="stat-info" id="unassignedValue">
+                            <span>$-- value</span>
+                        </div>
+                    </div>
+
+                    <!-- Total Value Assigned -->
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">💼 Total Value Assigned</div>
+                            <div class="stat-icon count">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="totalAssigned">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="stat-info" id="assignedPercentage">
+                            <span>-- of total</span>
+                        </div>
+                    </div>
+
+                    <!-- Average Auto Time -->
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">⏱️ Avg Time (Automation)</div>
+                            <div class="stat-icon success">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value success" id="avgAutoTime">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="stat-info">
+                            <span>minutes</span>
+                        </div>
+                    </div>
+
+                    <!-- Average Manual Time -->
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">⏱️ Avg Time (Manual)</div>
+                            <div class="stat-icon warning">
+                                <i class="fas fa-hourglass-half"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value warning" id="avgManualTime">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="stat-info">
+                            <span>minutes</span>
+                        </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Total Expenses Card -->
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-label">Total Expenses</div>
-                        <div class="stat-icon expense">
-                            <i class="fas fa-arrow-down"></i>
+            <!-- Automation Trend Chart -->
+            <div class="chart-section">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-chart-line"></i> Automation % Over Time</h3>
+                        <div class="chart-period-toggle">
+                            <button class="chart-period-btn active" data-chart-period="week">7 Days</button>
+                            <button class="chart-period-btn" data-chart-period="month">30 Days</button>
+                            <button class="chart-period-btn" data-chart-period="quarter">90 Days</button>
                         </div>
                     </div>
-                    <div class="stat-value" id="totalExpenses">
-                        <div class="spinner"></div>
-                    </div>
-                    <div class="stat-trend negative">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>+5.2% from last month</span>
-                    </div>
-                </div>
-
-                <!-- Net Cash Flow Card -->
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-label">Net Cash Flow</div>
-                        <div class="stat-icon net">
-                            <i class="fas fa-dollar-sign"></i>
-                        </div>
-                    </div>
-                    <div class="stat-value" id="netCash">
-                        <div class="spinner"></div>
-                    </div>
-                    <div class="stat-trend">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>+18.7% from last month</span>
-                    </div>
-                </div>
-
-                <!-- Total Transactions Card -->
-                <div class="stat-card">
-                    <div class="stat-header">
-                        <div class="stat-label">Total Transactions</div>
-                        <div class="stat-icon count">
-                            <i class="fas fa-receipt"></i>
-                        </div>
-                    </div>
-                    <div class="stat-value" id="transactionCount">
-                        <div class="spinner"></div>
-                    </div>
-                    <div class="stat-trend">
-                        <i class="fas fa-arrow-up"></i>
-                        <span>+3 from yesterday</span>
+                    <div class="chart-container">
+                        <canvas id="automationChart"></canvas>
                     </div>
                 </div>
             </div>
