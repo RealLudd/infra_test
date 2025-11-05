@@ -9,11 +9,11 @@ let currentChartPeriod = 'week';
 let automationChart = null;
 let currentBankAccount = '';  // Combined filter: "company_code|housebank|currency"
 
-// Format currency with USD formatting
+// Format currency with EUR formatting
 function formatCurrency(amount) {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'EUR',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(amount);
@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadOverview();
     loadAutomationTrend();
     loadCompanyStatus();
-    loadTransactions();
+    loadRecentTransactions();
 
     console.log('Dashboard loaded successfully');
 });
@@ -527,10 +527,9 @@ async function loadCompanyStatus() {
             const card = document.createElement('div');
             card.className = `company-status-card ${statusClass}`;
 
-            // Generate random times for demonstration
-            const now = new Date();
-            const startTime = new Date(now - Math.random() * 3600000);
-            const endTime = company.status === 'Done' ? new Date(startTime.getTime() + Math.random() * 1800000) : null;
+            // Use real start/end times from API
+            const startTime = company.start_time ? new Date(company.start_time) : null;
+            const endTime = company.end_time ? new Date(company.end_time) : null;
             
             const formatTime = (date) => date ? date.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'}) : '--:--';
 
@@ -577,13 +576,75 @@ async function loadCompanyStatus() {
     }
 }
 
-// Auto-refresh data every 60 seconds
+// Load recent transactions from today's live data
+async function loadRecentTransactions() {
+    try {
+        const response = await fetch('/api/recent-transactions');
+        const data = await response.json();
+
+        const listElement = document.getElementById('transactionList');
+        listElement.innerHTML = '';
+
+        if (data.transactions.length === 0) {
+            listElement.innerHTML = `
+                <li class="loading">
+                    <p>No transactions found</p>
+                </li>
+            `;
+            return;
+        }
+
+        data.transactions.forEach(transaction => {
+            const li = document.createElement('li');
+            const isMatch = transaction.match === 'YES';
+            const typeClass = isMatch ? 'income' : 'expense';
+            const icon = isMatch ? '✓' : '⏳';
+
+            // Determine automation badge
+            let automationBadge = '';
+            if (transaction.match === 'YES') {
+                automationBadge = '<span style="background: rgba(0, 242, 195, 0.2); color: var(--success-color); padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; margin-left: 8px;">AUTO</span>';
+            } else {
+                automationBadge = '<span style="background: rgba(255, 141, 114, 0.2); color: var(--warning-color); padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; margin-left: 8px;">PENDING</span>';
+            }
+
+            const bankAccount = `${transaction.company_code}-${transaction.housebank}-${transaction.currency}`;
+            const description = `Payment ${transaction.payment_number} - ${bankAccount}${transaction.business_partner ? ' - ' + transaction.business_partner : ''}`;
+
+            li.className = `transaction-item ${typeClass}`;
+            li.innerHTML = `
+                <div class="transaction-info">
+                    <div class="transaction-date">
+                        <i class="far fa-calendar"></i> ${transaction.payment_date}
+                    </div>
+                    <div class="transaction-description">
+                        ${icon} ${description} ${automationBadge}
+                    </div>
+                </div>
+                <div class="transaction-amount ${typeClass}">
+                    ${formatCurrency(Math.abs(transaction.amount))}
+                </div>
+            `;
+
+            listElement.appendChild(li);
+        });
+    } catch (error) {
+        console.error('Error loading recent transactions:', error);
+        const listElement = document.getElementById('transactionList');
+        listElement.innerHTML = `
+            <li class="loading">
+                <p style="color: var(--danger-color);">Error loading transactions</p>
+            </li>
+        `;
+    }
+}
+
+// Live data polling (every 5 minutes for company status and recent transactions)
 setInterval(() => {
-    loadOverview();
-    loadAutomationTrend();
+    console.log('Polling live data (5-minute interval)...');
     loadCompanyStatus();
-    loadTransactions();
-}, 60000);
+    loadRecentTransactions();
+}, 300000); // 5 minutes = 300,000 milliseconds
 
 // Handle window resize
 let resizeTimer;
