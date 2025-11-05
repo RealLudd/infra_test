@@ -1,92 +1,139 @@
-# 🚀 Analytics Dashboard - Infrastructure Test Project
+# 💰 CashWeb - Cash Management Dashboard
 
-A beautiful, interactive analytics dashboard built with Flask and Chart.js to demonstrate the **Cursor ↔ GitHub ↔ Claude Mobile** workflow.
+A modern, responsive web application for tracking cash flow and managing expenses built with Flask and vanilla JavaScript.
 
 ## ✨ Features
 
-- 📊 **Interactive Charts** - Real-time data visualization with Chart.js
-- 💎 **Modern UI** - Sleek, responsive design with smooth animations
-- 📱 **Mobile-Friendly** - Works perfectly on all devices
-- ⚡ **Live Updates** - Stats refresh automatically every 5 seconds
-- 🎨 **Beautiful Gradients** - Eye-catching visual design
-
-## 🖼️ What You'll See
-
-- **4 Stat Cards**: Total Users, Active Users, New Users, Premium Users
-- **Sales vs Expenses Chart**: Interactive bar chart
-- **System Performance**: Real-time CPU and Memory monitoring
-- **Category Distribution**: Beautiful doughnut chart
+- 📊 **Real-time Dashboard** - View income, expenses, and net cash flow at a glance
+- 💳 **Transaction Management** - Track all your cash transactions in one place
+- 📱 **Responsive Design** - Works perfectly on desktop, tablet, and mobile
+- 🚀 **RESTful API** - Clean API endpoints for integration
+- ⚡ **Auto-refresh** - Dashboard updates every 30 seconds
+- 🎨 **Modern UI** - Beautiful gradient design with smooth animations
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### Prerequisites
 
-```bash
-pip install -r requirements.txt
-```
+- Python 3.9 or higher
+- pip (Python package manager)
 
-### 2. Run the Dashboard
+### Installation
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/RealLudd/infra_test.git
+   cd infra_test
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+3. **Run the application:**
+   ```bash
+   python app.py
+   ```
+
+4. **Open in your browser:**
+   ```
+   http://localhost:5000
+   ```
+
+That's it! 🎉
+
+## 🖥️ Running on Your Server
+
+### Option A: Development Server (Quick Testing)
 
 ```bash
 python app.py
 ```
 
-### 3. Open in Browser
+The app will run on `http://0.0.0.0:5000`
 
-Go to: **http://localhost:5000**
+### Option B: Production Server (Recommended)
 
-That's it! 🎉
+For production deployment, use a WSGI server like Gunicorn:
 
-## 🌐 Demo to Colleagues
-
-### Option A: Local Demo (Screen Share)
-1. Run `python app.py`
-2. Open http://localhost:5000
-3. Share your screen on Teams/Zoom
-4. Show off the beautiful dashboard! ✨
-
-### Option B: Network Demo (Same Office)
-1. Run `python app.py`
-2. Find your IP address:
-   - Windows: `ipconfig` (look for IPv4)
-   - Mac/Linux: `ifconfig` or `ip addr`
-3. Share with colleagues: `http://YOUR_IP:5000`
-4. They can access it from their browsers!
-
-## 🎯 Testing the Workflow
-
-This project demonstrates the complete development workflow:
-
-### 1️⃣ **In Cursor (Local Development)**
-- Create and edit code
-- Run and test locally
-- Commit and push to GitHub
-
-### 2️⃣ **On Claude Mobile/Web** (claude.ai)
-- Connect to this GitHub repository
-- Ask Claude to add features:
-  - "Add a revenue chart"
-  - "Add dark mode toggle"
-  - "Add more statistics cards"
-  - "Create a user table view"
-- Review and accept changes
-- Claude commits directly to GitHub
-
-### 3️⃣ **Back in Cursor**
 ```bash
-git pull
-python app.py  # See the new features!
+pip install gunicorn
+gunicorn -w 4 -b 0.0.0.0:5000 app:app
+```
+
+### Option C: Windows Service
+
+To run as a Windows service, you can use NSSM (Non-Sucking Service Manager):
+
+1. Download NSSM from https://nssm.cc/download
+2. Install the service:
+   ```cmd
+   nssm install CashWeb "C:\Python39\python.exe" "C:\path\to\app.py"
+   nssm start CashWeb
+   ```
+
+## 📡 API Endpoints
+
+### GET `/`
+Main dashboard page
+
+### GET `/api/summary`
+Get cash flow summary
+```json
+{
+  "total_income": 10000,
+  "total_expenses": 380,
+  "net_cash": 9620,
+  "transaction_count": 5
+}
+```
+
+### GET `/api/transactions`
+Get all transactions
+```json
+[
+  {
+    "id": 1,
+    "date": "2025-11-01",
+    "description": "Sales Revenue",
+    "amount": 5000,
+    "type": "income"
+  },
+  ...
+]
+```
+
+### POST `/api/transactions`
+Add a new transaction
+```json
+{
+  "date": "2025-11-06",
+  "description": "New Sale",
+  "amount": 1500,
+  "type": "income"
+}
+```
+
+### GET `/health`
+Health check endpoint
+```json
+{
+  "status": "healthy",
+  "timestamp": "2025-11-05T10:30:00",
+  "service": "CashWeb"
+}
 ```
 
 ## 🧪 Running Tests
 
-The original test suite is still included:
+Run the test suite with pytest:
 
 ```bash
 pytest -v
 ```
 
-To run with coverage:
+With coverage report:
 
 ```bash
 pytest -v --cov=. --cov-report=term-missing
@@ -94,43 +141,82 @@ pytest -v --cov=. --cov-report=term-missing
 
 ## 🔧 Tech Stack
 
-- **Backend**: Flask (Python)
-- **Frontend**: HTML5, CSS3, JavaScript
-- **Charts**: Chart.js
-- **Testing**: pytest
-- **CI/CD**: GitHub Actions
+- **Backend:** Flask (Python)
+- **Frontend:** HTML5, CSS3, Vanilla JavaScript
+- **Testing:** pytest
+- **CI/CD:** GitHub Actions
 
 ## 📦 Project Structure
 
 ```
 infra_test/
 ├── app.py                    # Flask application
-├── templates/
-│   └── dashboard.html        # Dashboard UI
 ├── test_app.py              # Unit tests
 ├── requirements.txt         # Python dependencies
+├── templates/
+│   └── index.html           # Dashboard UI
 ├── .github/
 │   └── workflows/
-│       └── ci.yml           # CI/CD pipeline
-└── README.md                # This file
+│       └── ci.yml          # CI/CD pipeline
+├── .gitignore              # Git ignore file
+└── README.md               # This file
 ```
 
-## 🎨 Customization Ideas (Ask Claude!)
+## 🌐 Deployment
 
-Try asking Claude on mobile to:
-- ✅ "Add a dark mode toggle"
-- ✅ "Create a user activity table"
-- ✅ "Add a revenue projection chart"
-- ✅ "Implement real-time notifications"
-- ✅ "Add data export functionality"
-- ✅ "Create an API documentation page"
+### Local Network Access
+
+To allow others on your network to access the dashboard:
+
+1. Run the app: `python app.py`
+2. Find your IP address:
+   - Windows: `ipconfig`
+   - Linux/Mac: `ifconfig` or `ip addr`
+3. Share: `http://YOUR_IP:5000`
+
+### Port Configuration
+
+To change the port, edit `app.py`:
+
+```python
+if __name__ == '__main__':
+    app.run(debug=True, host='0.0.0.0', port=8080)  # Change port here
+```
+
+## 🔐 Security Notes
+
+This is a development version. For production:
+
+- Add authentication and authorization
+- Use HTTPS (SSL/TLS)
+- Implement rate limiting
+- Use a proper database (PostgreSQL, MySQL, etc.)
+- Add input validation and sanitization
+- Set `debug=False` in production
+
+## 🎯 Future Enhancements
+
+- [ ] Database integration (SQLite/PostgreSQL)
+- [ ] User authentication and multi-user support
+- [ ] Export transactions to CSV/Excel
+- [ ] Charts and graphs (Chart.js integration)
+- [ ] Budget planning and forecasting
+- [ ] Receipt upload and storage
+- [ ] Recurring transaction support
+- [ ] Category tagging and filtering
+- [ ] Dark mode toggle
 
 ## 🐛 Troubleshooting
 
 **Port already in use?**
 ```bash
-# Change port in app.py:
-app.run(debug=True, host='0.0.0.0', port=8080)
+# Find and kill the process using the port
+# Windows:
+netstat -ano | findstr :5000
+taskkill /PID <PID> /F
+
+# Linux/Mac:
+lsof -ti:5000 | xargs kill -9
 ```
 
 **Flask not installed?**
@@ -138,15 +224,23 @@ app.run(debug=True, host='0.0.0.0', port=8080)
 pip install Flask
 ```
 
-**Browser not opening automatically?**
-Just manually open: http://localhost:5000
+**Import errors?**
+```bash
+pip install -r requirements.txt --force-reinstall
+```
 
-## 🎉 Success!
+## 📄 License
 
-If you see a beautiful dashboard with animated charts and stats, you're all set! 
+This project is open source and available under the MIT License.
 
-Now you can impress your colleagues and demonstrate the seamless **Cursor + GitHub + Claude** workflow! 🚀
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome!
+
+## 📞 Support
+
+For support, please open an issue on GitHub.
 
 ---
 
-**Built with ❤️ to test modern development workflows**
+**Built with ❤️ for modern cash management**
