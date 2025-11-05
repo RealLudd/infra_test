@@ -11,21 +11,21 @@ app = Flask(__name__)
 
 # Enhanced sample data with automation tracking
 transactions = [
-    {"id": 1, "date": "2025-10-15", "description": "Client Payment A", "amount": 5000, "type": "income", "automated": True, "assigned_minutes": 2},
-    {"id": 2, "date": "2025-10-16", "description": "Client Payment B", "amount": 3200, "type": "income", "automated": True, "assigned_minutes": 1},
-    {"id": 3, "date": "2025-10-18", "description": "Client Payment C", "amount": 1800, "type": "income", "automated": False, "assigned_minutes": 45},
-    {"id": 4, "date": "2025-10-20", "description": "Client Payment D", "amount": 4500, "type": "income", "automated": True, "assigned_minutes": 3},
-    {"id": 5, "date": "2025-10-22", "description": "Client Payment E", "amount": 2700, "type": "income", "automated": False, "assigned_minutes": 62},
-    {"id": 6, "date": "2025-10-25", "description": "Client Payment F", "amount": 6200, "type": "income", "automated": True, "assigned_minutes": 2},
-    {"id": 7, "date": "2025-10-28", "description": "Client Payment G", "amount": 3900, "type": "income", "automated": True, "assigned_minutes": 1},
-    {"id": 8, "date": "2025-10-30", "description": "Client Payment H", "amount": 5500, "type": "income", "automated": False, "assigned_minutes": 38},
-    {"id": 9, "date": "2025-11-01", "description": "Client Payment I", "amount": 4800, "type": "income", "automated": True, "assigned_minutes": 2},
-    {"id": 10, "date": "2025-11-02", "description": "Client Payment J", "amount": 7100, "type": "income", "automated": True, "assigned_minutes": 1},
-    {"id": 11, "date": "2025-11-03", "description": "Client Payment K", "amount": 3300, "type": "income", "automated": False, "assigned_minutes": 52},
-    {"id": 12, "date": "2025-11-04", "description": "Client Payment L", "amount": 5900, "type": "income", "automated": True, "assigned_minutes": 3},
-    {"id": 13, "date": "2025-11-05", "description": "Client Payment M", "amount": 4200, "type": "income", "automated": True, "assigned_minutes": 2},
-    {"id": 14, "date": "2025-11-05", "description": "Pending Payment N", "amount": 2800, "type": "income", "automated": None, "assigned_minutes": None},
-    {"id": 15, "date": "2025-11-05", "description": "Pending Payment O", "amount": 3600, "type": "income", "automated": None, "assigned_minutes": None},
+    {"id": 1, "date": "2025-10-15", "description": "Client Payment A", "amount": 5000, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0014", "housebank": "1450I", "currency": "GBP2"},
+    {"id": 2, "date": "2025-10-16", "description": "Client Payment B", "amount": 3200, "type": "income", "automated": True, "assigned_minutes": 1, "company_code": "0010", "housebank": "1050D", "currency": "EUR"},
+    {"id": 3, "date": "2025-10-18", "description": "Client Payment C", "amount": 1800, "type": "income", "automated": False, "assigned_minutes": 45, "company_code": "0018", "housebank": "1850I", "currency": "EUR"},
+    {"id": 4, "date": "2025-10-20", "description": "Client Payment D", "amount": 4500, "type": "income", "automated": True, "assigned_minutes": 3, "company_code": "0015", "housebank": "CIT01", "currency": "OP272"},
+    {"id": 5, "date": "2025-10-22", "description": "Client Payment E", "amount": 2700, "type": "income", "automated": False, "assigned_minutes": 62, "company_code": "0024", "housebank": "2439I", "currency": "NOK_2"},
+    {"id": 6, "date": "2025-10-25", "description": "Client Payment F", "amount": 6200, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0040", "housebank": "SAN01", "currency": "OP464"},
+    {"id": 7, "date": "2025-10-28", "description": "Client Payment G", "amount": 3900, "type": "income", "automated": True, "assigned_minutes": 1, "company_code": "0033", "housebank": "3350I", "currency": "EUR"},
+    {"id": 8, "date": "2025-10-30", "description": "Client Payment H", "amount": 5500, "type": "income", "automated": False, "assigned_minutes": 38, "company_code": "0033", "housebank": "3350I", "currency": "USD"},
+    {"id": 9, "date": "2025-11-01", "description": "Client Payment I", "amount": 4800, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0012", "housebank": "570BE", "currency": "EUR"},
+    {"id": 10, "date": "2025-11-02", "description": "Client Payment J", "amount": 7100, "type": "income", "automated": True, "assigned_minutes": 1, "company_code": "0026", "housebank": "2602D", "currency": "PLN"},
+    {"id": 11, "date": "2025-11-03", "description": "Client Payment K", "amount": 3300, "type": "income", "automated": False, "assigned_minutes": 52, "company_code": "0041", "housebank": "4150I", "currency": "EUR"},
+    {"id": 12, "date": "2025-11-04", "description": "Client Payment L", "amount": 5900, "type": "income", "automated": True, "assigned_minutes": 3, "company_code": "0040", "housebank": "4050I", "currency": "EUR"},
+    {"id": 13, "date": "2025-11-05", "description": "Client Payment M", "amount": 4200, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0042", "housebank": "4234D", "currency": "EUR"},
+    {"id": 14, "date": "2025-11-05", "description": "Pending Payment N", "amount": 2800, "type": "income", "automated": None, "assigned_minutes": None, "company_code": "0044", "housebank": "4450I", "currency": "CZK"},
+    {"id": 15, "date": "2025-11-05", "description": "Pending Payment O", "amount": 3600, "type": "income", "automated": None, "assigned_minutes": None, "company_code": "0043", "housebank": "4350I", "currency": "EUR"},
 ]
 
 @app.route('/')
@@ -66,10 +66,26 @@ def add_transaction():
     transactions.append(new_transaction)
     return jsonify(new_transaction), 201
 
+@app.route('/api/filter-options')
+def get_filter_options():
+    """Get unique filter values for company code, housebank, and currency"""
+    company_codes = sorted(list(set(t.get('company_code', '') for t in transactions if t.get('company_code'))))
+    housebanks = sorted(list(set(t.get('housebank', '') for t in transactions if t.get('housebank'))))
+    currencies = sorted(list(set(t.get('currency', '') for t in transactions if t.get('currency'))))
+
+    return jsonify({
+        'company_codes': company_codes,
+        'housebanks': housebanks,
+        'currencies': currencies
+    })
+
 @app.route('/api/overview')
 def get_overview():
     """Get dashboard overview with automation metrics"""
     period = request.args.get('period', 'today')  # today, week, month, quarter
+    company_code = request.args.get('company_code', '')
+    housebank = request.args.get('housebank', '')
+    currency = request.args.get('currency', '')
 
     # Calculate date range
     today = datetime.now().date()
@@ -84,11 +100,14 @@ def get_overview():
     else:
         start_date = today
 
-    # Filter transactions by date range and type
+    # Filter transactions by date range, type, and additional filters
     filtered = [
         t for t in transactions
         if datetime.strptime(t['date'], '%Y-%m-%d').date() >= start_date
         and t['type'] == 'income'
+        and (not company_code or t.get('company_code', '') == company_code)
+        and (not housebank or t.get('housebank', '') == housebank)
+        and (not currency or t.get('currency', '') == currency)
     ]
 
     # Calculate metrics
@@ -131,6 +150,9 @@ def get_overview():
 def get_automation_trend():
     """Get automation trend data for charts"""
     period = request.args.get('period', 'week')  # week, month, quarter
+    company_code = request.args.get('company_code', '')
+    housebank = request.args.get('housebank', '')
+    currency = request.args.get('currency', '')
 
     # Calculate date range
     today = datetime.now().date()
@@ -155,9 +177,12 @@ def get_automation_trend():
         date_groups[date_str] = {'automated': 0, 'manual': 0, 'total': 0}
         current_date += timedelta(days=1)
 
-    # Count transactions per day
+    # Count transactions per day with filtering
     for t in transactions:
-        if t['type'] == 'income' and t.get('automated') is not None:
+        if (t['type'] == 'income' and t.get('automated') is not None
+            and (not company_code or t.get('company_code', '') == company_code)
+            and (not housebank or t.get('housebank', '') == housebank)
+            and (not currency or t.get('currency', '') == currency)):
             t_date = t['date']
             if t_date in date_groups:
                 date_groups[t_date]['total'] += 1

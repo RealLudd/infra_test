@@ -7,6 +7,9 @@
 let currentPeriod = 'week';
 let currentChartPeriod = 'week';
 let automationChart = null;
+let currentCompanyCode = '';
+let currentHousebank = '';
+let currentCurrency = '';
 
 // Format currency with USD formatting
 function formatCurrency(amount) {
@@ -21,7 +24,13 @@ function formatCurrency(amount) {
 // Load overview data from API
 async function loadOverview() {
     try {
-        const response = await fetch(`/api/overview?period=${currentPeriod}`);
+        const params = new URLSearchParams({
+            period: currentPeriod,
+            company_code: currentCompanyCode,
+            housebank: currentHousebank,
+            currency: currentCurrency
+        });
+        const response = await fetch(`/api/overview?${params}`);
         const data = await response.json();
 
         // Update Total Payments Received
@@ -64,7 +73,13 @@ async function loadOverview() {
 // Load automation trend data and render chart
 async function loadAutomationTrend() {
     try {
-        const response = await fetch(`/api/automation-trend?period=${currentChartPeriod}`);
+        const params = new URLSearchParams({
+            period: currentChartPeriod,
+            company_code: currentCompanyCode,
+            housebank: currentHousebank,
+            currency: currentCurrency
+        });
+        const response = await fetch(`/api/automation-trend?${params}`);
         const data = await response.json();
 
         renderAutomationChart(data);
@@ -324,6 +339,69 @@ function handleChartPeriodChange(period) {
     loadAutomationTrend();
 }
 
+// Load filter options from API
+async function loadFilterOptions() {
+    try {
+        const response = await fetch('/api/filter-options');
+        const data = await response.json();
+
+        // Populate company code filter
+        const companyCodeSelect = document.getElementById('companyCodeFilter');
+        data.company_codes.forEach(code => {
+            const option = document.createElement('option');
+            option.value = code;
+            option.textContent = code;
+            companyCodeSelect.appendChild(option);
+        });
+
+        // Populate housebank filter
+        const housebankSelect = document.getElementById('housebankFilter');
+        data.housebanks.forEach(housebank => {
+            const option = document.createElement('option');
+            option.value = housebank;
+            option.textContent = housebank;
+            housebankSelect.appendChild(option);
+        });
+
+        // Populate currency filter
+        const currencySelect = document.getElementById('currencyFilter');
+        data.currencies.forEach(currency => {
+            const option = document.createElement('option');
+            option.value = currency;
+            option.textContent = currency;
+            currencySelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading filter options:', error);
+    }
+}
+
+// Handle filter change
+function handleFilterChange() {
+    currentCompanyCode = document.getElementById('companyCodeFilter').value;
+    currentHousebank = document.getElementById('housebankFilter').value;
+    currentCurrency = document.getElementById('currencyFilter').value;
+
+    // Reload data with new filters
+    loadOverview();
+    loadAutomationTrend();
+}
+
+// Clear all filters
+function clearAllFilters() {
+    document.getElementById('companyCodeFilter').value = '';
+    document.getElementById('housebankFilter').value = '';
+    document.getElementById('currencyFilter').value = '';
+
+    currentCompanyCode = '';
+    currentHousebank = '';
+    currentCurrency = '';
+
+    // Reload data without filters
+    loadOverview();
+    loadAutomationTrend();
+}
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', () => {
     console.log('CashWeb Dashboard initializing...');
@@ -348,6 +426,12 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Setup filter event listeners
+    document.getElementById('companyCodeFilter').addEventListener('change', handleFilterChange);
+    document.getElementById('housebankFilter').addEventListener('change', handleFilterChange);
+    document.getElementById('currencyFilter').addEventListener('change', handleFilterChange);
+    document.getElementById('clearFiltersBtn').addEventListener('click', clearAllFilters);
+
     // Close sidebar when clicking outside on mobile
     document.addEventListener('click', (e) => {
         const sidebar = document.querySelector('.sidebar');
@@ -362,6 +446,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Load initial data
+    loadFilterOptions();
     loadOverview();
     loadAutomationTrend();
     loadTransactions();
