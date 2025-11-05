@@ -25,9 +25,9 @@
                 <h1><i class="fas fa-wallet"></i> CashWeb</h1>
                 <p>Cash Management System</p>
                 <div style="margin-top: 15px; padding: 10px; text-align: center;">
-                    <img src="https://www.tdsynnex.com/etc/designs/wdctheme/images/logo.svg"
+                    <img src="{{ url_for('static', filename='images/td_synnex_logo.png') }}"
                          alt="TD SYNNEX"
-                         style="max-width: 140px; opacity: 0.8; filter: brightness(0) invert(1);">
+                         style="max-width: 140px; opacity: 0.9;">
                 </div>
             </div>
 
@@ -114,18 +114,41 @@
                 </div>
             </div>
 
-            <!-- Bank Account Filter -->
+            <!-- Bank Account and Region Filters -->
             <div class="additional-filters">
                 <div class="filter-header">
-                    <h3><i class="fas fa-university"></i> Bank Account Configuration</h3>
+                    <h3><i class="fas fa-filter"></i> Filters</h3>
                     <button class="clear-filters-btn" id="clearFiltersBtn">
-                        <i class="fas fa-times"></i> Clear Filter
+                        <i class="fas fa-times"></i> Clear Filters
                     </button>
                 </div>
                 <div class="filter-controls">
                     <div class="filter-group">
+                        <label for="regionFilter">
+                            <i class="fas fa-globe"></i> Region
+                        </label>
+                        <select id="regionFilter" class="filter-select">
+                            <option value="">All Regions</option>
+                            <option value="Iberia">Iberia (0040, 0041)</option>
+                            <option value="France">France (0043)</option>
+                            <option value="NDX">NDX (0019, 0022, 0023, 0024)</option>
+                            <option value="UK">UK (0014)</option>
+                            <option value="BNX">BNX (0012, 0018)</option>
+                            <option value="GerAus">GerAus (0010, 0033)</option>
+                            <option value="PLN">PLN (0023)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="companyCodeFilterOnly">
+                            <i class="fas fa-building"></i> Company Code
+                        </label>
+                        <select id="companyCodeFilterOnly" class="filter-select">
+                            <option value="">All Company Codes</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
                         <label for="bankAccountFilter">
-                            <i class="fas fa-building"></i> Company Code - Housebank - Currency
+                            <i class="fas fa-university"></i> Bank Account Configuration
                         </label>
                         <select id="bankAccountFilter" class="filter-select">
                             <option value="">All Bank Accounts</option>

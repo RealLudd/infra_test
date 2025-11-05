@@ -102,19 +102,28 @@ def get_filter_options():
 
 @app.route('/api/company-status')
 def get_company_status():
-    """Get processing status for each unique company code"""
-    # Get unique company codes
-    company_codes = sorted(list(set(t.get('company_code', '') for t in transactions if t.get('company_code'))))
+    """Get processing status for each unique bank account configuration (company_code + housebank + currency)"""
+    # Get unique bank account configurations
+    bank_accounts = set()
+    for t in transactions:
+        if t.get('company_code') and t.get('housebank') and t.get('currency'):
+            bank_account = (t['company_code'], t['housebank'], t['currency'])
+            bank_accounts.add(bank_account)
 
-    company_status_list = []
-    for cc in company_codes:
-        # Get all transactions for this company code
-        cc_transactions = [t for t in transactions if t.get('company_code') == cc]
+    bank_account_status_list = []
+    for cc, hb, cur in sorted(bank_accounts):
+        # Get all transactions for this bank account configuration
+        ba_transactions = [
+            t for t in transactions 
+            if t.get('company_code') == cc 
+            and t.get('housebank') == hb 
+            and t.get('currency') == cur
+        ]
 
         # Count processed (automated or manual), pending (None), total
-        processed = [t for t in cc_transactions if t.get('automated') is not None]
-        pending = [t for t in cc_transactions if t.get('automated') is None]
-        total = len(cc_transactions)
+        processed = [t for t in ba_transactions if t.get('automated') is not None]
+        pending = [t for t in ba_transactions if t.get('automated') is None]
+        total = len(ba_transactions)
 
         # Determine status
         if len(pending) == 0 and total > 0:
@@ -126,8 +135,11 @@ def get_company_status():
         else:
             status = 'In Process'
 
-        company_status_list.append({
+        bank_account_status_list.append({
+            'bank_account': f"{cc}_{hb}_{cur}",
             'company_code': cc,
+            'housebank': hb,
+            'currency': cur,
             'status': status,
             'processed': len(processed),
             'pending': len(pending),
@@ -136,7 +148,7 @@ def get_company_status():
         })
 
     return jsonify({
-        'company_statuses': company_status_list
+        'company_statuses': bank_account_status_list
     })
 
 @app.route('/api/overview')

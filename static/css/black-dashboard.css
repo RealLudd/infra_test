@@ -776,12 +776,31 @@ body {
 }
 
 .company-code-label {
-    font-size: 1.2rem;
-    font-weight: 700;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.company-code-main {
+    font-size: 1.6rem;
+    font-weight: 800;
     color: var(--text-primary);
     display: flex;
     align-items: center;
     gap: 8px;
+    letter-spacing: 0.5px;
+}
+
+.company-code-main i {
+    font-size: 1.3rem;
+}
+
+.company-code-details {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+    padding-left: 28px;
+    opacity: 0.8;
 }
 
 .status-badge {
@@ -846,6 +865,22 @@ body {
     justify-content: space-between;
     font-size: 0.8rem;
     color: var(--text-secondary);
+}
+
+.company-time-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+}
+
+.time-label {
+    opacity: 0.7;
+    margin-right: 5px;
 }
 
 .sap-login-hint {

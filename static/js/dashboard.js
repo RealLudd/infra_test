@@ -352,6 +352,17 @@ function handleChartPeriodChange(period) {
     loadAutomationTrend();
 }
 
+// Region mapping
+const REGION_MAP = {
+    'Iberia': ['0040', '0041'],
+    'France': ['0043'],
+    'NDX': ['0019', '0022', '0023', '0024'],
+    'UK': ['0014'],
+    'BNX': ['0012', '0018'],
+    'GerAus': ['0010', '0033'],
+    'PLN': ['0023']
+};
+
 // Load filter options from API
 async function loadFilterOptions() {
     try {
@@ -365,6 +376,16 @@ async function loadFilterOptions() {
             option.value = account.value;
             option.textContent = account.label;
             bankAccountSelect.appendChild(option);
+        });
+
+        // Populate company code filter
+        const companyCodes = [...new Set(data.bank_accounts.map(acc => acc.value.split('|')[0]))].sort();
+        const companyCodeSelect = document.getElementById('companyCodeFilterOnly');
+        companyCodes.forEach(code => {
+            const option = document.createElement('option');
+            option.value = code;
+            option.textContent = code;
+            companyCodeSelect.appendChild(option);
         });
     } catch (error) {
         console.error('Error loading filter options:', error);
@@ -383,11 +404,39 @@ function handleFilterChange() {
 // Clear all filters
 function clearAllFilters() {
     document.getElementById('bankAccountFilter').value = '';
+    document.getElementById('regionFilter').value = '';
+    document.getElementById('companyCodeFilterOnly').value = '';
     currentBankAccount = '';
 
     // Reload data without filters
     loadOverview();
     loadAutomationTrend();
+    filterCompanyStatus();
+}
+
+// Filter company status cards based on region or company code
+function filterCompanyStatus() {
+    const regionFilter = document.getElementById('regionFilter').value;
+    const companyCodeFilter = document.getElementById('companyCodeFilterOnly').value;
+    
+    const cards = document.querySelectorAll('.company-status-card');
+    
+    cards.forEach(card => {
+        const companyCode = card.querySelector('.company-code-main').textContent.trim();
+        let show = true;
+        
+        // Apply region filter
+        if (regionFilter && REGION_MAP[regionFilter]) {
+            show = REGION_MAP[regionFilter].includes(companyCode);
+        }
+        
+        // Apply company code filter
+        if (companyCodeFilter && show) {
+            show = companyCode === companyCodeFilter;
+        }
+        
+        card.style.display = show ? '' : 'none';
+    });
 }
 
 // Initialize dashboard
@@ -416,6 +465,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup filter event listeners
     document.getElementById('bankAccountFilter').addEventListener('change', handleFilterChange);
+    document.getElementById('regionFilter').addEventListener('change', filterCompanyStatus);
+    document.getElementById('companyCodeFilterOnly').addEventListener('change', filterCompanyStatus);
     document.getElementById('clearFiltersBtn').addEventListener('click', clearAllFilters);
 
     // Setup smooth scrolling for sidebar navigation links
@@ -476,11 +527,23 @@ async function loadCompanyStatus() {
             const card = document.createElement('div');
             card.className = `company-status-card ${statusClass}`;
 
+            // Generate random times for demonstration
+            const now = new Date();
+            const startTime = new Date(now - Math.random() * 3600000);
+            const endTime = company.status === 'Done' ? new Date(startTime.getTime() + Math.random() * 1800000) : null;
+            
+            const formatTime = (date) => date ? date.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'}) : '--:--';
+
             card.innerHTML = `
                 <div class="company-status-header">
                     <div class="company-code-label">
-                        <i class="fas fa-building"></i>
-                        ${company.company_code}
+                        <div class="company-code-main">
+                            <i class="fas fa-building"></i>
+                            ${company.company_code}
+                        </div>
+                        <div class="company-code-details">
+                            ${company.housebank} • ${company.currency}
+                        </div>
                     </div>
                     <span class="status-badge ${statusClass}">${company.status}</span>
                 </div>
@@ -492,6 +555,10 @@ async function loadCompanyStatus() {
                     <div class="progress-bar-container">
                         <div class="progress-bar" style="width: ${company.percentage}%"></div>
                     </div>
+                </div>
+                <div class="company-time-info">
+                    <span><span class="time-label">Start:</span>${formatTime(startTime)}</span>
+                    <span><span class="time-label">End:</span>${formatTime(endTime)}</span>
                 </div>
                 <div class="company-details">
                     <span><i class="fas fa-check-circle"></i> Processed: ${company.processed}</span>
