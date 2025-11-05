@@ -741,8 +741,134 @@ body {
     box-shadow: 0 3px 10px rgba(29, 140, 248, 0.3);
 }
 
+/* Company Status Section */
+.company-status-section {
+    margin-bottom: 30px;
+}
+
+.company-status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+    padding: 25px;
+}
+
+.company-status-card {
+    background: linear-gradient(135deg, var(--card-bg) 0%, #2b3553 100%);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.company-status-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+    border-color: var(--primary-color);
+}
+
+.company-status-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+.company-code-label {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.status-badge.done {
+    background: linear-gradient(135deg, rgba(0, 242, 195, 0.2), rgba(0, 242, 195, 0.1));
+    color: var(--success-color);
+    border: 1px solid var(--success-color);
+}
+
+.status-badge.in-process {
+    background: linear-gradient(135deg, rgba(255, 141, 114, 0.2), rgba(255, 141, 114, 0.1));
+    color: var(--warning-color);
+    border: 1px solid var(--warning-color);
+}
+
+.status-badge.not-started {
+    background: linear-gradient(135deg, rgba(255, 77, 79, 0.2), rgba(255, 77, 79, 0.1));
+    color: var(--danger-color);
+    border: 1px solid var(--danger-color);
+}
+
+.company-progress {
+    margin-top: 15px;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-size: 0.85rem;
+}
+
+.progress-bar-container {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--secondary-color), var(--primary-color));
+    border-radius: 3px;
+    transition: width 0.6s ease;
+}
+
+.company-details {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.sap-login-hint {
+    margin-top: 10px;
+    padding: 8px 12px;
+    background: rgba(29, 140, 248, 0.1);
+    border-left: 3px solid var(--secondary-color);
+    border-radius: 4px;
+    font-size: 0.75rem;
+    color: var(--secondary-color);
+    display: none;
+}
+
+.company-status-card.done .sap-login-hint {
+    display: block;
+}
+
 /* Responsive Updates */
 @media (max-width: 768px) {
+    .company-status-grid {
+        grid-template-columns: 1fr;
+    }
+
     .period-selector {
         flex-direction: column;
         align-items: flex-start;

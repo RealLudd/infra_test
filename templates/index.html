@@ -24,6 +24,11 @@
             <div class="sidebar-brand">
                 <h1><i class="fas fa-wallet"></i> CashWeb</h1>
                 <p>Cash Management System</p>
+                <div style="margin-top: 15px; padding: 10px; text-align: center;">
+                    <img src="https://www.tdsynnex.com/etc/designs/wdctheme/images/logo.svg"
+                         alt="TD SYNNEX"
+                         style="max-width: 140px; opacity: 0.8; filter: brightness(0) invert(1);">
+                </div>
             </div>
 
             <ul class="sidebar-menu">
@@ -265,8 +270,26 @@
                 </div>
             </div>
 
+            <!-- Company Code Status Section -->
+            <div class="company-status-section" id="transactions">
+                <div class="card">
+                    <div class="card-header">
+                        <h3><i class="fas fa-building"></i> Company Code Processing Status</h3>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">
+                            Login to SAP when company code processing is complete
+                        </p>
+                    </div>
+                    <div class="company-status-grid" id="companyStatusGrid">
+                        <div class="loading" style="text-align: center; padding: 40px;">
+                            <div class="spinner"></div>
+                            <p>Loading company status...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Transactions Section -->
-            <div class="transactions-card" id="transactions">
+            <div class="transactions-card">
                 <div class="card-header">
                     <h3><i class="fas fa-history"></i> Recent Transactions</h3>
                 </div>
@@ -283,7 +306,7 @@
             <div class="footer">
                 <p>
                     <i class="fas fa-code"></i> CashWeb |
-                    Built with (L) by BPA
+                    Built with ❤️ by BPA
                 </p>
             </div>
         </div>

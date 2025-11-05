@@ -456,15 +456,65 @@ document.addEventListener('DOMContentLoaded', () => {
     loadFilterOptions();
     loadOverview();
     loadAutomationTrend();
+    loadCompanyStatus();
     loadTransactions();
 
     console.log('Dashboard loaded successfully');
 });
 
+// Load company code processing status
+async function loadCompanyStatus() {
+    try {
+        const response = await fetch('/api/company-status');
+        const data = await response.json();
+
+        const grid = document.getElementById('companyStatusGrid');
+        grid.innerHTML = '';
+
+        data.company_statuses.forEach(company => {
+            const statusClass = company.status.toLowerCase().replace(' ', '-');
+            const card = document.createElement('div');
+            card.className = `company-status-card ${statusClass}`;
+
+            card.innerHTML = `
+                <div class="company-status-header">
+                    <div class="company-code-label">
+                        <i class="fas fa-building"></i>
+                        ${company.company_code}
+                    </div>
+                    <span class="status-badge ${statusClass}">${company.status}</span>
+                </div>
+                <div class="company-progress">
+                    <div class="progress-info">
+                        <span>Progress</span>
+                        <span><strong>${company.percentage}%</strong></span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: ${company.percentage}%"></div>
+                    </div>
+                </div>
+                <div class="company-details">
+                    <span><i class="fas fa-check-circle"></i> Processed: ${company.processed}</span>
+                    <span><i class="fas fa-clock"></i> Pending: ${company.pending}</span>
+                </div>
+                <div class="sap-login-hint">
+                    <i class="fas fa-info-circle"></i> Ready for SAP login
+                </div>
+            `;
+
+            grid.appendChild(card);
+        });
+    } catch (error) {
+        console.error('Error loading company status:', error);
+        showNotification('Error loading company status', 'error');
+    }
+}
+
 // Auto-refresh data every 60 seconds
 setInterval(() => {
     loadOverview();
     loadAutomationTrend();
+    loadCompanyStatus();
     loadTransactions();
 }, 60000);
 

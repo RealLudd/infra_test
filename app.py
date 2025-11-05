@@ -100,6 +100,45 @@ def get_filter_options():
         'bank_accounts': bank_accounts_list
     })
 
+@app.route('/api/company-status')
+def get_company_status():
+    """Get processing status for each unique company code"""
+    # Get unique company codes
+    company_codes = sorted(list(set(t.get('company_code', '') for t in transactions if t.get('company_code'))))
+
+    company_status_list = []
+    for cc in company_codes:
+        # Get all transactions for this company code
+        cc_transactions = [t for t in transactions if t.get('company_code') == cc]
+
+        # Count processed (automated or manual), pending (None), total
+        processed = [t for t in cc_transactions if t.get('automated') is not None]
+        pending = [t for t in cc_transactions if t.get('automated') is None]
+        total = len(cc_transactions)
+
+        # Determine status
+        if len(pending) == 0 and total > 0:
+            status = 'Done'
+        elif len(processed) > 0 and len(pending) > 0:
+            status = 'In Process'
+        elif len(processed) == 0:
+            status = 'Not Started'
+        else:
+            status = 'In Process'
+
+        company_status_list.append({
+            'company_code': cc,
+            'status': status,
+            'processed': len(processed),
+            'pending': len(pending),
+            'total': total,
+            'percentage': round((len(processed) / total * 100), 1) if total > 0 else 0
+        })
+
+    return jsonify({
+        'company_statuses': company_status_list
+    })
+
 @app.route('/api/overview')
 def get_overview():
     """Get dashboard overview with automation metrics"""
