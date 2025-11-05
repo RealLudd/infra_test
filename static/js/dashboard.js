@@ -7,9 +7,7 @@
 let currentPeriod = 'week';
 let currentChartPeriod = 'week';
 let automationChart = null;
-let currentCompanyCode = '';
-let currentHousebank = '';
-let currentCurrency = '';
+let currentBankAccount = '';  // Combined filter: "company_code|housebank|currency"
 
 // Format currency with USD formatting
 function formatCurrency(amount) {
@@ -26,9 +24,7 @@ async function loadOverview() {
     try {
         const params = new URLSearchParams({
             period: currentPeriod,
-            company_code: currentCompanyCode,
-            housebank: currentHousebank,
-            currency: currentCurrency
+            bank_account: currentBankAccount
         });
         const response = await fetch(`/api/overview?${params}`);
         const data = await response.json();
@@ -75,9 +71,7 @@ async function loadAutomationTrend() {
     try {
         const params = new URLSearchParams({
             period: currentChartPeriod,
-            company_code: currentCompanyCode,
-            housebank: currentHousebank,
-            currency: currentCurrency
+            bank_account: currentBankAccount
         });
         const response = await fetch(`/api/automation-trend?${params}`);
         const data = await response.json();
@@ -345,31 +339,13 @@ async function loadFilterOptions() {
         const response = await fetch('/api/filter-options');
         const data = await response.json();
 
-        // Populate company code filter
-        const companyCodeSelect = document.getElementById('companyCodeFilter');
-        data.company_codes.forEach(code => {
+        // Populate bank account filter
+        const bankAccountSelect = document.getElementById('bankAccountFilter');
+        data.bank_accounts.forEach(account => {
             const option = document.createElement('option');
-            option.value = code;
-            option.textContent = code;
-            companyCodeSelect.appendChild(option);
-        });
-
-        // Populate housebank filter
-        const housebankSelect = document.getElementById('housebankFilter');
-        data.housebanks.forEach(housebank => {
-            const option = document.createElement('option');
-            option.value = housebank;
-            option.textContent = housebank;
-            housebankSelect.appendChild(option);
-        });
-
-        // Populate currency filter
-        const currencySelect = document.getElementById('currencyFilter');
-        data.currencies.forEach(currency => {
-            const option = document.createElement('option');
-            option.value = currency;
-            option.textContent = currency;
-            currencySelect.appendChild(option);
+            option.value = account.value;
+            option.textContent = account.label;
+            bankAccountSelect.appendChild(option);
         });
     } catch (error) {
         console.error('Error loading filter options:', error);
@@ -378,24 +354,17 @@ async function loadFilterOptions() {
 
 // Handle filter change
 function handleFilterChange() {
-    currentCompanyCode = document.getElementById('companyCodeFilter').value;
-    currentHousebank = document.getElementById('housebankFilter').value;
-    currentCurrency = document.getElementById('currencyFilter').value;
+    currentBankAccount = document.getElementById('bankAccountFilter').value;
 
-    // Reload data with new filters
+    // Reload data with new filter
     loadOverview();
     loadAutomationTrend();
 }
 
 // Clear all filters
 function clearAllFilters() {
-    document.getElementById('companyCodeFilter').value = '';
-    document.getElementById('housebankFilter').value = '';
-    document.getElementById('currencyFilter').value = '';
-
-    currentCompanyCode = '';
-    currentHousebank = '';
-    currentCurrency = '';
+    document.getElementById('bankAccountFilter').value = '';
+    currentBankAccount = '';
 
     // Reload data without filters
     loadOverview();
@@ -427,9 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Setup filter event listeners
-    document.getElementById('companyCodeFilter').addEventListener('change', handleFilterChange);
-    document.getElementById('housebankFilter').addEventListener('change', handleFilterChange);
-    document.getElementById('currencyFilter').addEventListener('change', handleFilterChange);
+    document.getElementById('bankAccountFilter').addEventListener('change', handleFilterChange);
     document.getElementById('clearFiltersBtn').addEventListener('click', clearAllFilters);
 
     // Close sidebar when clicking outside on mobile

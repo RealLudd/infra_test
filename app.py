@@ -10,6 +10,7 @@ import random
 app = Flask(__name__)
 
 # Enhanced sample data with automation tracking
+# Bank account configurations represent unique combinations of company_code + housebank + currency
 transactions = [
     {"id": 1, "date": "2025-10-15", "description": "Client Payment A", "amount": 5000, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0014", "housebank": "1450I", "currency": "GBP2"},
     {"id": 2, "date": "2025-10-16", "description": "Client Payment B", "amount": 3200, "type": "income", "automated": True, "assigned_minutes": 1, "company_code": "0010", "housebank": "1050D", "currency": "EUR"},
@@ -24,8 +25,14 @@ transactions = [
     {"id": 11, "date": "2025-11-03", "description": "Client Payment K", "amount": 3300, "type": "income", "automated": False, "assigned_minutes": 52, "company_code": "0041", "housebank": "4150I", "currency": "EUR"},
     {"id": 12, "date": "2025-11-04", "description": "Client Payment L", "amount": 5900, "type": "income", "automated": True, "assigned_minutes": 3, "company_code": "0040", "housebank": "4050I", "currency": "EUR"},
     {"id": 13, "date": "2025-11-05", "description": "Client Payment M", "amount": 4200, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0042", "housebank": "4234D", "currency": "EUR"},
-    {"id": 14, "date": "2025-11-05", "description": "Pending Payment N", "amount": 2800, "type": "income", "automated": None, "assigned_minutes": None, "company_code": "0044", "housebank": "4450I", "currency": "CZK"},
-    {"id": 15, "date": "2025-11-05", "description": "Pending Payment O", "amount": 3600, "type": "income", "automated": None, "assigned_minutes": None, "company_code": "0043", "housebank": "4350I", "currency": "EUR"},
+    {"id": 14, "date": "2025-11-05", "description": "Client Payment N", "amount": 2800, "type": "income", "automated": None, "assigned_minutes": None, "company_code": "0044", "housebank": "4450I", "currency": "CZK"},
+    {"id": 15, "date": "2025-11-05", "description": "Client Payment O", "amount": 3600, "type": "income", "automated": None, "assigned_minutes": None, "company_code": "0043", "housebank": "4350I", "currency": "EUR"},
+    {"id": 16, "date": "2025-11-01", "description": "Client Payment P", "amount": 5200, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0041", "housebank": "4175I", "currency": "EUR"},
+    {"id": 17, "date": "2025-11-02", "description": "Client Payment Q", "amount": 4100, "type": "income", "automated": True, "assigned_minutes": 1, "company_code": "0043", "housebank": "4335I", "currency": "EUR"},
+    {"id": 18, "date": "2025-11-03", "description": "Client Payment R", "amount": 6300, "type": "income", "automated": False, "assigned_minutes": 48, "company_code": "0019", "housebank": "1939I", "currency": "EUR"},
+    {"id": 19, "date": "2025-11-04", "description": "Client Payment S", "amount": 3800, "type": "income", "automated": True, "assigned_minutes": 2, "company_code": "0011", "housebank": "1101I", "currency": "CHF"},
+    {"id": 20, "date": "2025-11-04", "description": "Client Payment T", "amount": 4900, "type": "income", "automated": True, "assigned_minutes": 1, "company_code": "0022", "housebank": "2239X", "currency": "SEK"},
+    {"id": 21, "date": "2025-11-05", "description": "Client Payment U", "amount": 5100, "type": "income", "automated": False, "assigned_minutes": 55, "company_code": "0011", "housebank": "1101D", "currency": "CHF"},
 ]
 
 @app.route('/')
@@ -68,24 +75,40 @@ def add_transaction():
 
 @app.route('/api/filter-options')
 def get_filter_options():
-    """Get unique filter values for company code, housebank, and currency"""
-    company_codes = sorted(list(set(t.get('company_code', '') for t in transactions if t.get('company_code'))))
-    housebanks = sorted(list(set(t.get('housebank', '') for t in transactions if t.get('housebank'))))
-    currencies = sorted(list(set(t.get('currency', '') for t in transactions if t.get('currency'))))
+    """Get unique bank account configurations (company_code + housebank + currency combinations)"""
+    # Get unique combinations of company_code, housebank, and currency
+    bank_accounts = set()
+    for t in transactions:
+        if t.get('company_code') and t.get('housebank') and t.get('currency'):
+            # Create a tuple representing the bank account configuration
+            bank_account = (t['company_code'], t['housebank'], t['currency'])
+            bank_accounts.add(bank_account)
+
+    # Sort and format bank accounts for display
+    bank_accounts_list = [
+        {
+            'value': f"{cc}|{hb}|{cur}",  # Use pipe separator for the filter value
+            'label': f"{cc} - {hb} - {cur}"  # Human-readable label
+        }
+        for cc, hb, cur in sorted(bank_accounts)
+    ]
 
     return jsonify({
-        'company_codes': company_codes,
-        'housebanks': housebanks,
-        'currencies': currencies
+        'bank_accounts': bank_accounts_list
     })
 
 @app.route('/api/overview')
 def get_overview():
     """Get dashboard overview with automation metrics"""
     period = request.args.get('period', 'today')  # today, week, month, quarter
-    company_code = request.args.get('company_code', '')
-    housebank = request.args.get('housebank', '')
-    currency = request.args.get('currency', '')
+    bank_account = request.args.get('bank_account', '')  # Combined filter: "company_code|housebank|currency"
+
+    # Parse bank account filter if provided
+    company_code, housebank, currency = '', '', ''
+    if bank_account:
+        parts = bank_account.split('|')
+        if len(parts) == 3:
+            company_code, housebank, currency = parts
 
     # Calculate date range
     today = datetime.now().date()
@@ -100,14 +123,16 @@ def get_overview():
     else:
         start_date = today
 
-    # Filter transactions by date range, type, and additional filters
+    # Filter transactions by date range, type, and bank account configuration
     filtered = [
         t for t in transactions
         if datetime.strptime(t['date'], '%Y-%m-%d').date() >= start_date
         and t['type'] == 'income'
-        and (not company_code or t.get('company_code', '') == company_code)
-        and (not housebank or t.get('housebank', '') == housebank)
-        and (not currency or t.get('currency', '') == currency)
+        and (not bank_account or (
+            t.get('company_code', '') == company_code
+            and t.get('housebank', '') == housebank
+            and t.get('currency', '') == currency
+        ))
     ]
 
     # Calculate metrics
@@ -150,9 +175,14 @@ def get_overview():
 def get_automation_trend():
     """Get automation trend data for charts"""
     period = request.args.get('period', 'week')  # week, month, quarter
-    company_code = request.args.get('company_code', '')
-    housebank = request.args.get('housebank', '')
-    currency = request.args.get('currency', '')
+    bank_account = request.args.get('bank_account', '')  # Combined filter: "company_code|housebank|currency"
+
+    # Parse bank account filter if provided
+    company_code, housebank, currency = '', '', ''
+    if bank_account:
+        parts = bank_account.split('|')
+        if len(parts) == 3:
+            company_code, housebank, currency = parts
 
     # Calculate date range
     today = datetime.now().date()
@@ -180,9 +210,11 @@ def get_automation_trend():
     # Count transactions per day with filtering
     for t in transactions:
         if (t['type'] == 'income' and t.get('automated') is not None
-            and (not company_code or t.get('company_code', '') == company_code)
-            and (not housebank or t.get('housebank', '') == housebank)
-            and (not currency or t.get('currency', '') == currency)):
+            and (not bank_account or (
+                t.get('company_code', '') == company_code
+                and t.get('housebank', '') == housebank
+                and t.get('currency', '') == currency
+            ))):
             t_date = t['date']
             if t_date in date_groups:
                 date_groups[t_date]['total'] += 1
