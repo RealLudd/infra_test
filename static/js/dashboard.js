@@ -630,26 +630,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Setup smooth scrolling for sidebar navigation links
-    document.querySelectorAll('.sidebar a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            const targetId = this.getAttribute('href').substring(1);
-            const targetElement = document.getElementById(targetId);
-
-            if (targetElement) {
-                e.preventDefault();
-                targetElement.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'start'
-                });
-
-                // Close sidebar on mobile after clicking
-                if (window.innerWidth <= 991) {
-                    document.querySelector('.sidebar').classList.remove('active');
-                }
-            }
-        });
-    });
+    // Navigation is handled by setupCustomerExceptionsNav() below
 
     // Close sidebar when clicking outside on mobile
     document.addEventListener('click', (e) => {
@@ -663,6 +644,10 @@ document.addEventListener('DOMContentLoaded', () => {
             sidebar.classList.remove('active');
         }
     });
+
+    // Setup navigation handlers
+    setupCustomerExceptionsNav();
+    setupCustomerExceptionsListeners();
 
     // Load initial data
     loadFilterOptions();
@@ -1227,6 +1212,4 @@ function setupCustomerExceptionsListeners() {
     });
 }
 
-// Initialize Customer Exceptions functionality
-setupCustomerExceptionsNav();
-setupCustomerExceptionsListeners();
+// Customer Exceptions functionality is initialized in DOMContentLoaded above
