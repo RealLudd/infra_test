@@ -39,10 +39,15 @@ def process_output_file(filepath, data_date):
     try:
         print(f"  Processing: {os.path.basename(filepath)}")
         
-        # FRAN files are CSV format with semicolon delimiter and European number format
-        # Use decimal=',' for European format (comma as decimal) and thousands='.' 
-        df = pd.read_csv(filepath, sep=';', decimal=',', thousands='.')
+        # FRAN files are CSV format with comma delimiter
+        # Amount field is quoted with US format: "2,602.90" (comma=thousands, period=decimal)
+        df = pd.read_csv(filepath, sep=',', quotechar='"')
         df.columns = df.columns.str.strip()
+        
+        # Convert Amount column: remove thousand separators (comma) and convert to float
+        if 'Amount' in df.columns:
+            # Amount is like "2,602.90" - remove commas and convert
+            df['Amount'] = df['Amount'].astype(str).str.replace(',', '').astype(float)
         
         filename = os.path.basename(filepath)
         company_code, housebank, currency = parse_filename(filename)
