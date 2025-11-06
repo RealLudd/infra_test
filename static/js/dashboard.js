@@ -431,8 +431,8 @@ function clearAllFilters() {
 
 // Filter company status cards based on region or company code
 function filterCompanyStatus() {
-    const regionFilter = document.getElementById('regionFilter').value;
-    const companyCodeFilter = document.getElementById('companyCodeFilterOnly').value;
+    const regionFilter = document.getElementById('regionFilter')?.value || '';
+    const companyCodeFilter = document.getElementById('companyCodeFilterOnly')?.value || '';
     
     console.log(`Filtering - Region: "${regionFilter}", Company Code: "${companyCodeFilter}"`);
     
@@ -442,6 +442,14 @@ function filterCompanyStatus() {
     if (cards.length === 0) {
         console.log('No cards found to filter - cards not loaded yet?');
         return;
+    }
+    
+    // Debug: show all company codes in cards
+    const allCodes = Array.from(cards).map(c => c.getAttribute('data-company-code'));
+    console.log(`All company codes in cards: [${allCodes.join(', ')}]`);
+    
+    if (regionFilter) {
+        console.log(`Region "${regionFilter}" maps to codes: [${REGION_MAP[regionFilter]?.join(', ') || 'NOT FOUND'}]`);
     }
     
     cards.forEach(card => {
@@ -454,12 +462,13 @@ function filterCompanyStatus() {
         }
         
         let show = true;
+        let hideReason = '';
         
         // Apply region filter
         if (regionFilter && REGION_MAP[regionFilter]) {
             show = REGION_MAP[regionFilter].includes(companyCode);
             if (!show) {
-                console.log(`  Hiding ${companyCode} - not in region ${regionFilter}`);
+                hideReason = `not in region ${regionFilter} (expected: ${REGION_MAP[regionFilter].join(', ')})`;
             }
         }
         
@@ -467,8 +476,12 @@ function filterCompanyStatus() {
         if (companyCodeFilter && show) {
             show = companyCode === companyCodeFilter;
             if (!show) {
-                console.log(`  Hiding ${companyCode} - doesn't match filter ${companyCodeFilter}`);
+                hideReason = `doesn't match filter "${companyCodeFilter}" (card has "${companyCode}")`;
             }
+        }
+        
+        if (!show) {
+            console.log(`  Hiding ${companyCode} - ${hideReason}`);
         }
         
         if (show) visibleCount++;
