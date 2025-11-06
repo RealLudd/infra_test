@@ -573,14 +573,26 @@ def get_automation_trend():
     # Group by date
     daily_groups = filtered_df.groupby('date').agg({
         'total_payments': 'sum',
-        'automated_count': 'sum'
+        'automated_count': 'sum',
+        'assigned_to_account': 'sum',
+        'invoices_assigned': 'sum'
     }).reset_index()
+    
+    # Prepare data for all metrics
+    paco_automated = []
+    paco_customers = []
+    paco_invoices = []
+    fran_automated = []
+    fran_customers = []
+    fran_invoices = []
     
     # Generate labels and data
     for _, row in daily_groups.iterrows():
         date_obj = row['date']
         total = row['total_payments']
         automated = row['automated_count']
+        customers = row['assigned_to_account']
+        invoices = row['invoices_assigned']
         
         # Format label
         if period == 'week':
@@ -588,18 +600,30 @@ def get_automation_trend():
         else:
             label = date_obj.strftime('%m/%d')
         
-        # Calculate automation percentage (all PACO for now)
-        paco_pct = (automated / total * 100) if total > 0 else 0
+        # Calculate percentages for each metric (all PACO for now)
+        automated_pct = (automated / total * 100) if total > 0 else 0
+        customers_pct = (customers / total * 100) if total > 0 else 0
+        invoices_pct = (invoices / total * 100) if total > 0 else 0
         
         labels.append(label)
-        paco_percentages.append(round(paco_pct, 1))
-        fran_percentages.append(0)  # FRAN data not yet available
+        paco_automated.append(round(automated_pct, 1))
+        paco_customers.append(round(customers_pct, 1))
+        paco_invoices.append(round(invoices_pct, 1))
+        fran_automated.append(0)  # FRAN data not yet available
+        fran_customers.append(0)
+        fran_invoices.append(0)
         payment_counts.append(int(total))
     
     return jsonify({
         'labels': labels,
-        'paco_percentages': paco_percentages,
-        'fran_percentages': fran_percentages,
+        'paco_percentages': paco_automated,  # Legacy field for backward compatibility
+        'fran_percentages': fran_automated,  # Legacy field for backward compatibility
+        'paco_automated': paco_automated,
+        'paco_customers': paco_customers,
+        'paco_invoices': paco_invoices,
+        'fran_automated': fran_automated,
+        'fran_customers': fran_customers,
+        'fran_invoices': fran_invoices,
         'payment_counts': payment_counts
     })
 

@@ -6,6 +6,7 @@
 // Global variables
 let currentPeriod = 'week';
 let currentChartPeriod = 'week';
+let currentChartMetric = 'automated_percentage';  // Selected metric for chart
 let automationChart = null;
 let currentBankAccount = '';  // Combined filter: "company_code|housebank|currency"
 let currentRegion = '';  // Region filter
@@ -102,6 +103,31 @@ function renderAutomationChart(data) {
         automationChart.destroy();
     }
 
+    // Determine which data to show based on selected metric
+    let pacoData, franData, metricLabel;
+    
+    switch(currentChartMetric) {
+        case 'automated_percentage':
+            pacoData = data.paco_automated || data.paco_percentages;
+            franData = data.fran_automated || data.fran_percentages;
+            metricLabel = 'Processed Automatically';
+            break;
+        case 'customers_percentage':
+            pacoData = data.paco_customers || [];
+            franData = data.fran_customers || [];
+            metricLabel = 'Posted to Customer Accounts';
+            break;
+        case 'invoices_percentage':
+            pacoData = data.paco_invoices || [];
+            franData = data.fran_invoices || [];
+            metricLabel = 'Invoices Cleared';
+            break;
+        default:
+            pacoData = data.paco_automated || data.paco_percentages;
+            franData = data.fran_automated || data.fran_percentages;
+            metricLabel = 'Processed Automatically';
+    }
+
     // Create gradients for PACO and FRAN lines
     const pacoGradient = ctx.createLinearGradient(0, 0, 0, 400);
     pacoGradient.addColorStop(0, 'rgba(29, 140, 248, 0.3)');
@@ -117,8 +143,8 @@ function renderAutomationChart(data) {
             labels: data.labels,
             datasets: [
                 {
-                    label: 'PACO Automation %',
-                    data: data.paco_percentages,
+                    label: `PACO - ${metricLabel} %`,
+                    data: pacoData,
                     borderColor: '#1d8cf8',
                     backgroundColor: pacoGradient,
                     borderWidth: 3,
@@ -131,8 +157,8 @@ function renderAutomationChart(data) {
                     pointHoverRadius: 6,
                 },
                 {
-                    label: 'FRAN Automation %',
-                    data: data.fran_percentages,
+                    label: `FRAN - ${metricLabel} %`,
+                    data: franData,
                     borderColor: '#e14eca',
                     backgroundColor: franGradient,
                     borderWidth: 3,
@@ -364,6 +390,15 @@ function handleChartPeriodChange(period) {
     loadAutomationTrend();
 }
 
+// Handle chart metric selector change
+function handleChartMetricChange(metric) {
+    currentChartMetric = metric;
+    console.log(`Chart metric changed to: ${metric}`);
+    
+    // Reload chart data with new metric
+    loadAutomationTrend();
+}
+
 // Region mapping
 const REGION_MAP = {
     'Iberia': ['0040', '0041'],
@@ -580,6 +615,14 @@ document.addEventListener('DOMContentLoaded', () => {
             handleChartPeriodChange(btn.dataset.chartPeriod);
         });
     });
+
+    // Setup chart metric selector
+    const metricSelector = document.getElementById('chartMetricSelector');
+    if (metricSelector) {
+        metricSelector.addEventListener('change', (e) => {
+            handleChartMetricChange(e.target.value);
+        });
+    }
 
     // Setup filter event listeners
     document.getElementById('bankAccountFilter').addEventListener('change', handleFilterChange);
