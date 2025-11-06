@@ -194,7 +194,14 @@ def get_raw_data_counts(automation_type='PACO'):
                         'housebank': housebank,
                         'currency': currency,
                         'total_payments': total_payments,
+                        'total_received': 0,  # Unknown from raw data
+                        'total_received_eur': 0,  # Unknown from raw data
                         'automated_count': 0,  # Not processed yet
+                        'assigned_to_account': 0,  # Not processed yet
+                        'invoices_assigned': 0,  # Not processed yet
+                        'value_assigned': 0,  # Not processed yet
+                        'value_assigned_eur': 0,  # Not processed yet
+                        'processing_minutes': 0,  # Not processed yet
                         'is_raw': True,
                         'file_timestamp': datetime.now()
                     })
