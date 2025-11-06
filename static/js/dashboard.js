@@ -439,11 +439,19 @@ function filterCompanyStatus() {
     const cards = document.querySelectorAll('.company-status-card');
     let visibleCount = 0;
     
+    if (cards.length === 0) {
+        console.log('No cards found to filter - cards not loaded yet?');
+        return;
+    }
+    
     cards.forEach(card => {
-        // Extract company code from the card (removing icon and whitespace)
-        const companyCodeText = card.querySelector('.company-code-main').textContent.trim();
-        // Remove any non-alphanumeric characters (removes icons and spaces)
-        const companyCode = companyCodeText.replace(/[^\w]/g, '');
+        // Get company code from data attribute (more reliable than parsing text)
+        const companyCode = card.getAttribute('data-company-code');
+        
+        if (!companyCode) {
+            console.warn('Card missing data-company-code attribute:', card);
+            return;
+        }
         
         let show = true;
         
@@ -458,6 +466,9 @@ function filterCompanyStatus() {
         // Apply company code filter
         if (companyCodeFilter && show) {
             show = companyCode === companyCodeFilter;
+            if (!show) {
+                console.log(`  Hiding ${companyCode} - doesn't match filter ${companyCodeFilter}`);
+            }
         }
         
         if (show) visibleCount++;
@@ -606,6 +617,9 @@ async function loadCompanyStatus() {
             const statusClass = company.status.toLowerCase().replace(' ', '-');
             const card = document.createElement('div');
             card.className = `company-status-card ${statusClass}`;
+            
+            // Store company code as data attribute for filtering
+            card.setAttribute('data-company-code', company.company_code);
 
             // Use real start/end times from API
             const startTime = company.start_time ? new Date(company.start_time) : null;
@@ -665,6 +679,9 @@ async function loadCompanyStatus() {
 
             grid.appendChild(card);
         });
+        
+        // Apply any active filters after cards are loaded
+        filterCompanyStatus();
     } catch (error) {
         console.error('Error loading company status:', error);
         showNotification('Error loading company status', 'error');
