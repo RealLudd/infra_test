@@ -93,22 +93,30 @@ def process_live_excel_file(filepath):
         total_payments = len(df)
         total_received = df['Amount'].sum() if 'Amount' in df.columns else 0
         
-        # Check Match column (can be 'YES', 'Yes', 'yes', etc.)
+        # Determine which DocNumbers column to use
+        docnumbers_col = None
+        if 'DocNumbers' in df.columns:
+            docnumbers_col = 'DocNumbers'
+        elif 'Docnumbers' in df.columns:
+            docnumbers_col = 'Docnumbers'
+        
+        # Processed Automatically = Match == "Yes" AND has invoices (DocNumbers not empty)
         automated_count = 0
-        if 'Match' in df.columns:
-            automated_count = len(df[df['Match'].str.upper() == 'YES'])
+        if 'Match' in df.columns and docnumbers_col:
+            automated_mask = (df['Match'].str.upper() == 'YES') & (df[docnumbers_col].notna()) & (df[docnumbers_col] != '')
+            automated_count = len(df[automated_mask])
         
         assigned_to_account = len(df[df['Business_Partner'].notna()]) if 'Business_Partner' in df.columns else 0
         
         invoices_assigned = 0
-        if 'DocNumbers' in df.columns:
-            invoices_assigned = df['DocNumbers'].apply(count_invoices).sum()
-        elif 'Docnumbers' in df.columns:
-            invoices_assigned = df['Docnumbers'].apply(count_invoices).sum()
+        if docnumbers_col:
+            invoices_assigned = df[docnumbers_col].apply(count_invoices).sum()
         
+        # Value Assigned = Amount for rows where Match == "Yes" AND has invoices
         value_assigned = 0
-        if 'Match' in df.columns and 'Amount' in df.columns:
-            value_assigned = df[df['Match'].str.upper() == 'YES']['Amount'].sum()
+        if 'Match' in df.columns and 'Amount' in df.columns and docnumbers_col:
+            value_mask = (df['Match'].str.upper() == 'YES') & (df[docnumbers_col].notna()) & (df[docnumbers_col] != '')
+            value_assigned = df[value_mask]['Amount'].sum()
         
         # Convert amounts to EUR
         total_received_eur = convert_to_eur(total_received, currency)
