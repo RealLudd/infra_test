@@ -473,11 +473,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshBtn = document.getElementById('refreshDataBtn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
-            console.log('Refreshing live data...');
+            const now = new Date().toLocaleTimeString();
+            console.log(`🔄 Manual refresh triggered at ${now}`);
             
             // Add spinning animation to refresh icon
             const icon = refreshBtn.querySelector('i');
             icon.classList.add('fa-spin');
+            
+            // Disable button during refresh
+            refreshBtn.disabled = true;
             
             // Reload live data sections
             Promise.all([
@@ -486,10 +490,18 @@ document.addEventListener('DOMContentLoaded', () => {
             ]).then(() => {
                 // Remove spinning animation
                 icon.classList.remove('fa-spin');
-                console.log('Live data refreshed successfully');
+                refreshBtn.disabled = false;
+                console.log(`✅ Live data refreshed successfully at ${new Date().toLocaleTimeString()}`);
+                
+                // Show a brief success indicator
+                refreshBtn.style.backgroundColor = 'rgba(0, 242, 195, 0.2)';
+                setTimeout(() => {
+                    refreshBtn.style.backgroundColor = '';
+                }, 1000);
             }).catch(error => {
                 icon.classList.remove('fa-spin');
-                console.error('Error refreshing data:', error);
+                refreshBtn.disabled = false;
+                console.error('❌ Error refreshing data:', error);
             });
         });
     }
@@ -541,11 +553,26 @@ document.addEventListener('DOMContentLoaded', () => {
 // Load company code processing status
 async function loadCompanyStatus() {
     try {
-        const response = await fetch('/api/company-status');
+        // Add cache buster to ensure fresh data
+        const cacheBuster = new Date().getTime();
+        const response = await fetch(`/api/company-status?_=${cacheBuster}`);
         const data = await response.json();
+
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`Company status loaded: ${data.company_statuses.length} accounts at ${timestamp}`);
+
+        // Update timestamp display
+        const timestampElement = document.getElementById('companyStatusTimestamp');
+        if (timestampElement) {
+            timestampElement.textContent = timestamp;
+        }
 
         const grid = document.getElementById('companyStatusGrid');
         grid.innerHTML = '';
+        
+        // Add a subtle flash effect to show refresh
+        grid.style.opacity = '0.5';
+        setTimeout(() => { grid.style.opacity = '1'; }, 100);
 
         data.company_statuses.forEach(company => {
             const statusClass = company.status.toLowerCase().replace(' ', '-');
@@ -604,8 +631,12 @@ async function loadCompanyStatus() {
 // Load recent transactions from today's live data
 async function loadRecentTransactions() {
     try {
-        const response = await fetch('/api/recent-transactions');
+        // Add cache buster to ensure fresh data
+        const cacheBuster = new Date().getTime();
+        const response = await fetch(`/api/recent-transactions?_=${cacheBuster}`);
         const data = await response.json();
+        
+        console.log(`Recent transactions loaded: ${data.transactions.length} transactions at ${new Date().toLocaleTimeString()}`);
 
         const listElement = document.getElementById('transactionList');
         listElement.innerHTML = '';
