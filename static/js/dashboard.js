@@ -893,6 +893,9 @@ function setupCustomerExceptionsNav() {
                 const exceptionsSection = document.getElementById('customer-exceptions');
                 exceptionsSection.style.display = 'block';
 
+                // Update navbar title
+                document.querySelector('.navbar h2').innerHTML = '<i class="fas fa-user-shield"></i> Customer Exceptions';
+
                 // Load customer exceptions data
                 loadExceptionFilterOptions();
                 loadCustomerExceptions();
@@ -911,6 +914,41 @@ function setupCustomerExceptionsNav() {
                 });
 
                 document.getElementById('customer-exceptions').style.display = 'none';
+
+                // Update navbar title
+                document.querySelector('.navbar h2').innerHTML = '<i class="fas fa-chart-line"></i> Dashboard Overview';
+            } else if (navType === 'transactions') {
+                e.preventDefault();
+
+                // Update active state
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                // Show dashboard sections, hide customer exceptions
+                document.querySelectorAll('.content > div:not(#customer-exceptions)').forEach(el => {
+                    if (el.id !== 'customer-exceptions') {
+                        el.style.display = 'block';
+                    }
+                });
+
+                document.getElementById('customer-exceptions').style.display = 'none';
+
+                // Update navbar title
+                document.querySelector('.navbar h2').innerHTML = '<i class="fas fa-exchange-alt"></i> Transactions';
+
+                // Scroll to transactions section
+                const transactionsSection = document.getElementById('transactions');
+                if (transactionsSection) {
+                    transactionsSection.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+
+                // Close sidebar on mobile
+                if (window.innerWidth <= 991) {
+                    document.querySelector('.sidebar').classList.remove('active');
+                }
             }
         });
     });
@@ -919,37 +957,18 @@ function setupCustomerExceptionsNav() {
 // Load filter options for Customer Exceptions
 async function loadExceptionFilterOptions() {
     try {
-        const response = await fetch('/api/customer-exceptions/filter-options');
+        const response = await fetch('/api/filter-options');
         const data = await response.json();
 
-        // Populate company code filter
-        const companyCodeSelect = document.getElementById('exceptionCompanyCode');
-        companyCodeSelect.innerHTML = '<option value="">All Company Codes</option>';
-        data.company_codes.forEach(code => {
-            const option = document.createElement('option');
-            option.value = code;
-            option.textContent = code;
-            companyCodeSelect.appendChild(option);
-        });
+        // Populate bank account filter (same as dashboard)
+        const bankAccountSelect = document.getElementById('exceptionBankAccount');
+        bankAccountSelect.innerHTML = '<option value="">All Bank Accounts</option>';
 
-        // Populate house bank filter
-        const houseBankSelect = document.getElementById('exceptionHouseBank');
-        houseBankSelect.innerHTML = '<option value="">All House Banks</option>';
-        data.housebanks.forEach(bank => {
+        data.bank_accounts.forEach(account => {
             const option = document.createElement('option');
-            option.value = bank;
-            option.textContent = bank;
-            houseBankSelect.appendChild(option);
-        });
-
-        // Populate currency filter
-        const currencySelect = document.getElementById('exceptionCurrency');
-        currencySelect.innerHTML = '<option value="">All Currencies</option>';
-        data.currencies.forEach(curr => {
-            const option = document.createElement('option');
-            option.value = curr;
-            option.textContent = curr;
-            currencySelect.appendChild(option);
+            option.value = account.value;
+            option.textContent = account.label;
+            bankAccountSelect.appendChild(option);
         });
     } catch (error) {
         console.error('Error loading filter options:', error);
@@ -958,17 +977,21 @@ async function loadExceptionFilterOptions() {
 
 // Load customer exceptions with optional filters
 async function loadCustomerExceptions() {
-    const companyCode = document.getElementById('exceptionCompanyCode').value;
-    const houseBank = document.getElementById('exceptionHouseBank').value;
-    const currency = document.getElementById('exceptionCurrency').value;
+    const bankAccount = document.getElementById('exceptionBankAccount').value;
     const businessPartner = document.getElementById('exceptionBusinessPartner').value;
     const partnerKey = document.getElementById('exceptionPartnerKey').value;
     const partnerRef = document.getElementById('exceptionPartnerRef').value;
 
     const params = new URLSearchParams();
-    if (companyCode) params.append('company_code', companyCode);
-    if (houseBank) params.append('housebank', houseBank);
-    if (currency) params.append('currency', currency);
+
+    // Parse bank account value (format: "company_code|housebank|currency")
+    if (bankAccount) {
+        const [companyCode, houseBank, currency] = bankAccount.split('|');
+        if (companyCode) params.append('company_code', companyCode);
+        if (houseBank) params.append('housebank', houseBank);
+        if (currency) params.append('currency', currency);
+    }
+
     if (businessPartner) params.append('business_partner', businessPartner);
     if (partnerKey) params.append('partner_key', partnerKey);
     if (partnerRef) params.append('partner_ref', partnerRef);
@@ -1180,9 +1203,7 @@ function setupCustomerExceptionsListeners() {
 
     // Clear filters button
     document.getElementById('clearExceptionFiltersBtn').addEventListener('click', () => {
-        document.getElementById('exceptionCompanyCode').value = '';
-        document.getElementById('exceptionHouseBank').value = '';
-        document.getElementById('exceptionCurrency').value = '';
+        document.getElementById('exceptionBankAccount').value = '';
         document.getElementById('exceptionBusinessPartner').value = '';
         document.getElementById('exceptionPartnerKey').value = '';
         document.getElementById('exceptionPartnerRef').value = '';
