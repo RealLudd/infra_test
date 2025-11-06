@@ -676,7 +676,9 @@ def get_filter_options():
     df = load_historical_data()
     if not df.empty:
         for _, row in df.iterrows():
-            bank_account = (row['company_code'], row['housebank'], row['currency'])
+            # Keep company_code with leading zeros (e.g., 0010)
+            company_code = str(row['company_code']).zfill(4) if str(row['company_code']).isdigit() else str(row['company_code'])
+            bank_account = (company_code, str(row['housebank']), str(row['currency']))
             bank_accounts.add(bank_account)
     
     # Get from live data
@@ -685,13 +687,13 @@ def get_filter_options():
         bank_account = (record['company_code'], record['housebank'], record['currency'])
         bank_accounts.add(bank_account)
     
-    # Format for display
+    # Format for display - sort by converting to strings
     bank_accounts_list = [
         {
             'value': f"{cc}|{hb}|{cur}",
             'label': f"{cc} - {hb} - {cur}"
         }
-        for cc, hb, cur in sorted(bank_accounts)
+        for cc, hb, cur in sorted(bank_accounts, key=lambda x: (str(x[0]), str(x[1]), str(x[2])))
     ]
     
     return jsonify({
