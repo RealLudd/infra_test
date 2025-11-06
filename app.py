@@ -16,15 +16,18 @@ app = Flask(__name__)
 
 # Configuration
 CONSOLIDATED_DB_PATH = "data/paco_consolidated.xlsx"
+FRAN_CONSOLIDATED_DB_PATH = "data/fran_consolidated.xlsx"
 PACO_NETWORK_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\03_Output\2025"
-FRAN_NETWORK_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\03_Output\2025"  # Update when FRAN path is available
+FRAN_NETWORK_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\03_Output\2025"
 PACO_RAW_DATA_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\02_RD\02_P\2025"
-FRAN_RAW_DATA_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\02_RD\02_F\2025"  # FRAN raw data path
+FRAN_RAW_DATA_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\02_RD\02_F\2025"
 CUSTOMER_EXCEPTIONS_PATH = "data/customer_exceptions.json"
 
 # Global cache for historical data
 historical_data_cache = None
 historical_data_timestamp = None
+fran_data_cache = None
+fran_data_timestamp = None
 
 # Customer exceptions storage helpers
 def load_customer_exceptions():
@@ -51,7 +54,7 @@ def save_customer_exceptions(exceptions):
 
 def load_historical_data(force_reload=False):
     """
-    Load historical data from consolidated Excel database.
+    Load PACO historical data from consolidated Excel database.
     Caches the data to avoid repeated file reads.
     """
     global historical_data_cache, historical_data_timestamp
@@ -70,10 +73,37 @@ def load_historical_data(force_reload=False):
             historical_data_timestamp = datetime.now()
             return df
         except Exception as e:
-            print(f"Error loading historical data: {str(e)}")
+            print(f"Error loading PACO historical data: {str(e)}")
             return pd.DataFrame()
     else:
-        print(f"Historical database not found: {CONSOLIDATED_DB_PATH}")
+        print(f"PACO historical database not found: {CONSOLIDATED_DB_PATH}")
+        return pd.DataFrame()
+
+def load_fran_historical_data(force_reload=False):
+    """
+    Load FRAN historical data from consolidated Excel database.
+    Caches the data to avoid repeated file reads.
+    """
+    global fran_data_cache, fran_data_timestamp
+    
+    # Check if cache is valid (less than 5 minutes old)
+    if not force_reload and fran_data_cache is not None:
+        if fran_data_timestamp and (datetime.now() - fran_data_timestamp).seconds < 300:
+            return fran_data_cache
+    
+    # Load data from Excel
+    if os.path.exists(FRAN_CONSOLIDATED_DB_PATH):
+        try:
+            df = pd.read_excel(FRAN_CONSOLIDATED_DB_PATH, engine='openpyxl')
+            df['date'] = pd.to_datetime(df['date']).dt.date
+            fran_data_cache = df
+            fran_data_timestamp = datetime.now()
+            return df
+        except Exception as e:
+            print(f"Error loading FRAN historical data: {str(e)}")
+            return pd.DataFrame()
+    else:
+        print(f"FRAN historical database not found: {FRAN_CONSOLIDATED_DB_PATH}")
         return pd.DataFrame()
 
 def parse_filename(filename):
@@ -568,15 +598,55 @@ def get_automation_trend():
         if company_code_filter:
             mask &= (df['company_code'] == company_code_filter)
     
-    filtered_df = df[mask]
+    filtered_paco_df = df[mask]
     
-    # Group by date
-    daily_groups = filtered_df.groupby('date').agg({
+    # Load and filter FRAN data
+    fran_df = load_fran_historical_data()
+    fran_filtered_df = pd.DataFrame()
+    
+    if not fran_df.empty:
+        # Convert company_code to string for consistent filtering
+        fran_df['company_code'] = fran_df['company_code'].apply(lambda x: str(x).zfill(4) if str(x).isdigit() else str(x))
+        
+        # Apply same filters to FRAN data
+        fran_mask = (fran_df['date'] >= start_date) & (fran_df['date'] <= end_date)
+        
+        if bank_account:
+            fran_mask &= (fran_df['company_code'] == company_code) & \
+                        (fran_df['housebank'] == housebank) & \
+                        (fran_df['currency'] == currency)
+        else:
+            if region and region in REGION_MAP:
+                fran_mask &= fran_df['company_code'].isin(REGION_MAP[region])
+            if company_code_filter:
+                fran_mask &= (fran_df['company_code'] == company_code_filter)
+        
+        fran_filtered_df = fran_df[fran_mask]
+    
+    # Group PACO data by date
+    paco_daily = filtered_paco_df.groupby('date').agg({
         'total_payments': 'sum',
         'automated_count': 'sum',
         'assigned_to_account': 'sum',
         'invoices_assigned': 'sum'
     }).reset_index()
+    
+    # Group FRAN data by date
+    fran_daily = pd.DataFrame()
+    if not fran_filtered_df.empty:
+        fran_daily = fran_filtered_df.groupby('date').agg({
+            'total_payments': 'sum',
+            'automated_count': 'sum',
+            'assigned_to_account': 'sum',
+            'invoices_assigned': 'sum'
+        }).reset_index()
+    
+    # Create a union of all dates from both systems
+    all_dates = set()
+    if not paco_daily.empty:
+        all_dates.update(paco_daily['date'].tolist())
+    if not fran_daily.empty:
+        all_dates.update(fran_daily['date'].tolist())
     
     # Prepare data for all metrics
     paco_automated = []
@@ -586,33 +656,54 @@ def get_automation_trend():
     fran_customers = []
     fran_invoices = []
     
-    # Generate labels and data
-    for _, row in daily_groups.iterrows():
-        date_obj = row['date']
-        total = row['total_payments']
-        automated = row['automated_count']
-        customers = row['assigned_to_account']
-        invoices = row['invoices_assigned']
-        
+    # Generate labels and data for each date
+    for date_obj in sorted(all_dates):
         # Format label
         if period == 'week':
             label = date_obj.strftime('%a %m/%d')
         else:
             label = date_obj.strftime('%m/%d')
-        
-        # Calculate percentages for each metric (all PACO for now)
-        automated_pct = (automated / total * 100) if total > 0 else 0
-        customers_pct = (customers / total * 100) if total > 0 else 0
-        invoices_pct = (invoices / total * 100) if total > 0 else 0
-        
         labels.append(label)
-        paco_automated.append(round(automated_pct, 1))
-        paco_customers.append(round(customers_pct, 1))
-        paco_invoices.append(round(invoices_pct, 1))
-        fran_automated.append(0)  # FRAN data not yet available
-        fran_customers.append(0)
-        fran_invoices.append(0)
-        payment_counts.append(int(total))
+        
+        # Get PACO data for this date
+        paco_row = paco_daily[paco_daily['date'] == date_obj]
+        if not paco_row.empty:
+            paco_total = paco_row['total_payments'].iloc[0]
+            paco_auto = paco_row['automated_count'].iloc[0]
+            paco_cust = paco_row['assigned_to_account'].iloc[0]
+            paco_inv = paco_row['invoices_assigned'].iloc[0]
+            
+            paco_automated.append(round((paco_auto / paco_total * 100) if paco_total > 0 else 0, 1))
+            paco_customers.append(round((paco_cust / paco_total * 100) if paco_total > 0 else 0, 1))
+            paco_invoices.append(round((paco_inv / paco_total * 100) if paco_total > 0 else 0, 1))
+        else:
+            paco_automated.append(0)
+            paco_customers.append(0)
+            paco_invoices.append(0)
+        
+        # Get FRAN data for this date
+        fran_row = fran_daily[fran_daily['date'] == date_obj] if not fran_daily.empty else pd.DataFrame()
+        if not fran_row.empty:
+            fran_total = fran_row['total_payments'].iloc[0]
+            fran_auto = fran_row['automated_count'].iloc[0]
+            fran_cust = fran_row['assigned_to_account'].iloc[0]
+            fran_inv = fran_row['invoices_assigned'].iloc[0]
+            
+            fran_automated.append(round((fran_auto / fran_total * 100) if fran_total > 0 else 0, 1))
+            fran_customers.append(round((fran_cust / fran_total * 100) if fran_total > 0 else 0, 1))
+            fran_invoices.append(round((fran_inv / fran_total * 100) if fran_total > 0 else 0, 1))
+        else:
+            fran_automated.append(0)
+            fran_customers.append(0)
+            fran_invoices.append(0)
+        
+        # Total payments from both systems (or just the one that has data)
+        total_count = 0
+        if not paco_row.empty:
+            total_count += int(paco_row['total_payments'].iloc[0])
+        if not fran_row.empty:
+            total_count += int(fran_row['total_payments'].iloc[0])
+        payment_counts.append(total_count)
     
     return jsonify({
         'labels': labels,
