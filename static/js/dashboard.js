@@ -200,6 +200,40 @@ function renderAutomationChart(data) {
                         padding: 15
                     }
                 },
+                datalabels: {
+                    display: true,
+                    color: '#ffffff',
+                    font: {
+                        size: 10,
+                        weight: 'bold',
+                        family: 'Poppins'
+                    },
+                    formatter: function(value, context) {
+                        if (value === 0) return ''; // Don't show zeros
+                        
+                        if (isPercentage) {
+                            // For line charts with percentages
+                            return value + '%';
+                        } else {
+                            // For bar charts with numbers
+                            return formatNumber(value);
+                        }
+                    },
+                    anchor: chartType === 'bar' ? 'end' : 'end',
+                    align: chartType === 'bar' ? 'top' : 'top',
+                    offset: chartType === 'bar' ? 4 : 2,
+                    backgroundColor: function(context) {
+                        // Add semi-transparent background for readability
+                        return chartType === 'bar' ? 'rgba(0, 0, 0, 0.5)' : 'rgba(0, 0, 0, 0.6)';
+                    },
+                    borderRadius: 4,
+                    padding: {
+                        top: 2,
+                        bottom: 2,
+                        left: 4,
+                        right: 4
+                    }
+                },
                 tooltip: {
                     backgroundColor: 'rgba(39, 41, 61, 0.95)',
                     titleColor: '#ffffff',
