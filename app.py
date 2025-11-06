@@ -9,6 +9,7 @@ from datetime import datetime, timedelta, date
 import pandas as pd
 import os
 import re
+import json
 from currency_converter import convert_to_eur
 
 app = Flask(__name__)
@@ -19,10 +20,34 @@ PACO_NETWORK_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_
 FRAN_NETWORK_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\03_Output\2025"  # Update when FRAN path is available
 PACO_RAW_DATA_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\02_RD\02_P\2025"
 FRAN_RAW_DATA_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\02_RD\02_F\2025"  # FRAN raw data path
+CUSTOMER_EXCEPTIONS_PATH = "data/customer_exceptions.json"
 
 # Global cache for historical data
 historical_data_cache = None
 historical_data_timestamp = None
+
+# Customer exceptions storage helpers
+def load_customer_exceptions():
+    """Load customer exceptions from JSON file"""
+    if os.path.exists(CUSTOMER_EXCEPTIONS_PATH):
+        try:
+            with open(CUSTOMER_EXCEPTIONS_PATH, 'r') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error loading customer exceptions: {str(e)}")
+            return []
+    return []
+
+def save_customer_exceptions(exceptions):
+    """Save customer exceptions to JSON file"""
+    try:
+        os.makedirs(os.path.dirname(CUSTOMER_EXCEPTIONS_PATH), exist_ok=True)
+        with open(CUSTOMER_EXCEPTIONS_PATH, 'w') as f:
+            json.dump(exceptions, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"Error saving customer exceptions: {str(e)}")
+        return False
 
 def load_historical_data(force_reload=False):
     """
@@ -768,6 +793,182 @@ def get_filter_options():
     
     return jsonify({
         'bank_accounts': bank_accounts_list
+    })
+
+@app.route('/api/customer-exceptions', methods=['GET'])
+def get_customer_exceptions():
+    """
+    Get all customer exceptions with optional filters.
+    Query params: company_code, housebank, currency, business_partner, partner_key, partner_ref
+    """
+    exceptions = load_customer_exceptions()
+
+    # Apply filters
+    company_code = request.args.get('company_code', '')
+    housebank = request.args.get('housebank', '')
+    currency = request.args.get('currency', '')
+    business_partner = request.args.get('business_partner', '')
+    partner_key = request.args.get('partner_key', '')
+    partner_ref = request.args.get('partner_ref', '')
+
+    filtered_exceptions = exceptions
+
+    if company_code:
+        filtered_exceptions = [e for e in filtered_exceptions if e.get('company_code', '').lower() == company_code.lower()]
+    if housebank:
+        filtered_exceptions = [e for e in filtered_exceptions if e.get('housebank', '').lower() == housebank.lower()]
+    if currency:
+        filtered_exceptions = [e for e in filtered_exceptions if e.get('currency', '').lower() == currency.lower()]
+    if business_partner:
+        filtered_exceptions = [e for e in filtered_exceptions if business_partner.lower() in e.get('business_partner', '').lower()]
+    if partner_key:
+        filtered_exceptions = [e for e in filtered_exceptions if partner_key.lower() in e.get('partner_key', '').lower()]
+    if partner_ref:
+        filtered_exceptions = [e for e in filtered_exceptions if partner_ref.lower() in e.get('partner_ref', '').lower()]
+
+    return jsonify({
+        'exceptions': filtered_exceptions,
+        'total': len(filtered_exceptions)
+    })
+
+@app.route('/api/customer-exceptions', methods=['POST'])
+def create_customer_exception():
+    """Create a new customer exception"""
+    data = request.get_json()
+
+    # Validate required fields
+    required_fields = ['company_code', 'housebank', 'currency', 'business_partner', 'exception_type']
+    for field in required_fields:
+        if not data.get(field):
+            return jsonify({'error': f'Missing required field: {field}'}), 400
+
+    # Validate exception_type
+    if data['exception_type'] not in ['included', 'excluded']:
+        return jsonify({'error': 'Invalid exception_type. Must be "included" or "excluded"'}), 400
+
+    exceptions = load_customer_exceptions()
+
+    # Generate new ID
+    max_id = max([e.get('id', 0) for e in exceptions], default=0)
+    new_exception = {
+        'id': max_id + 1,
+        'company_code': data['company_code'],
+        'housebank': data['housebank'],
+        'currency': data['currency'],
+        'business_partner': data['business_partner'],
+        'partner_key': data.get('partner_key', ''),
+        'partner_ref': data.get('partner_ref', ''),
+        'exception_type': data['exception_type'],
+        'created_at': datetime.now().isoformat(),
+        'updated_at': datetime.now().isoformat()
+    }
+
+    exceptions.append(new_exception)
+
+    if save_customer_exceptions(exceptions):
+        return jsonify(new_exception), 201
+    else:
+        return jsonify({'error': 'Failed to save exception'}), 500
+
+@app.route('/api/customer-exceptions/<int:exception_id>', methods=['PUT'])
+def update_customer_exception(exception_id):
+    """Update an existing customer exception"""
+    data = request.get_json()
+    exceptions = load_customer_exceptions()
+
+    # Find exception by ID
+    exception_index = None
+    for i, e in enumerate(exceptions):
+        if e.get('id') == exception_id:
+            exception_index = i
+            break
+
+    if exception_index is None:
+        return jsonify({'error': 'Exception not found'}), 404
+
+    # Validate exception_type if provided
+    if 'exception_type' in data and data['exception_type'] not in ['included', 'excluded']:
+        return jsonify({'error': 'Invalid exception_type. Must be "included" or "excluded"'}), 400
+
+    # Update exception
+    exception = exceptions[exception_index]
+    exception['company_code'] = data.get('company_code', exception['company_code'])
+    exception['housebank'] = data.get('housebank', exception['housebank'])
+    exception['currency'] = data.get('currency', exception['currency'])
+    exception['business_partner'] = data.get('business_partner', exception['business_partner'])
+    exception['partner_key'] = data.get('partner_key', exception.get('partner_key', ''))
+    exception['partner_ref'] = data.get('partner_ref', exception.get('partner_ref', ''))
+    exception['exception_type'] = data.get('exception_type', exception['exception_type'])
+    exception['updated_at'] = datetime.now().isoformat()
+
+    exceptions[exception_index] = exception
+
+    if save_customer_exceptions(exceptions):
+        return jsonify(exception)
+    else:
+        return jsonify({'error': 'Failed to update exception'}), 500
+
+@app.route('/api/customer-exceptions/<int:exception_id>', methods=['DELETE'])
+def delete_customer_exception(exception_id):
+    """Delete a customer exception"""
+    exceptions = load_customer_exceptions()
+
+    # Find and remove exception
+    exception_index = None
+    for i, e in enumerate(exceptions):
+        if e.get('id') == exception_id:
+            exception_index = i
+            break
+
+    if exception_index is None:
+        return jsonify({'error': 'Exception not found'}), 404
+
+    deleted_exception = exceptions.pop(exception_index)
+
+    if save_customer_exceptions(exceptions):
+        return jsonify({'message': 'Exception deleted', 'exception': deleted_exception})
+    else:
+        return jsonify({'error': 'Failed to delete exception'}), 500
+
+@app.route('/api/customer-exceptions/filter-options')
+def get_exception_filter_options():
+    """Get unique values for filter dropdowns"""
+    exceptions = load_customer_exceptions()
+
+    # Get unique values from historical data and live data
+    df = load_historical_data()
+    live_records = get_live_data('PACO')
+
+    company_codes = set()
+    housebanks = set()
+    currencies = set()
+
+    # From historical data
+    if not df.empty:
+        df['company_code'] = df['company_code'].apply(lambda x: str(x).zfill(4) if str(x).isdigit() else str(x))
+        company_codes.update(df['company_code'].unique().tolist())
+        housebanks.update(df['housebank'].unique().tolist())
+        currencies.update(df['currency'].unique().tolist())
+
+    # From live data
+    for record in live_records:
+        company_codes.add(record['company_code'])
+        housebanks.add(record['housebank'])
+        currencies.add(record['currency'])
+
+    # From existing exceptions
+    for exc in exceptions:
+        if exc.get('company_code'):
+            company_codes.add(exc['company_code'])
+        if exc.get('housebank'):
+            housebanks.add(exc['housebank'])
+        if exc.get('currency'):
+            currencies.add(exc['currency'])
+
+    return jsonify({
+        'company_codes': sorted(list(company_codes)),
+        'housebanks': sorted(list(housebanks)),
+        'currencies': sorted(list(currencies))
     })
 
 @app.route('/health')

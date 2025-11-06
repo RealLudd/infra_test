@@ -863,3 +863,349 @@ window.addEventListener('resize', () => {
         }
     }, 250);
 });
+
+// ============================================
+// CUSTOMER EXCEPTIONS FUNCTIONALITY
+// ============================================
+
+// Navigation handling for Customer Exceptions tab
+function setupCustomerExceptionsNav() {
+    const navLinks = document.querySelectorAll('.sidebar-menu a');
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            const navType = link.getAttribute('data-nav');
+
+            if (navType === 'customer-exceptions') {
+                e.preventDefault();
+
+                // Update active state
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                // Hide dashboard sections, show customer exceptions
+                document.querySelectorAll('.content > div:not(#customer-exceptions)').forEach(el => {
+                    if (el.id !== 'customer-exceptions') {
+                        el.style.display = 'none';
+                    }
+                });
+
+                const exceptionsSection = document.getElementById('customer-exceptions');
+                exceptionsSection.style.display = 'block';
+
+                // Load customer exceptions data
+                loadExceptionFilterOptions();
+                loadCustomerExceptions();
+            } else if (navType === 'dashboard') {
+                e.preventDefault();
+
+                // Update active state
+                navLinks.forEach(l => l.classList.remove('active'));
+                link.classList.add('active');
+
+                // Show dashboard sections, hide customer exceptions
+                document.querySelectorAll('.content > div:not(#customer-exceptions)').forEach(el => {
+                    if (el.id !== 'customer-exceptions') {
+                        el.style.display = 'block';
+                    }
+                });
+
+                document.getElementById('customer-exceptions').style.display = 'none';
+            }
+        });
+    });
+}
+
+// Load filter options for Customer Exceptions
+async function loadExceptionFilterOptions() {
+    try {
+        const response = await fetch('/api/customer-exceptions/filter-options');
+        const data = await response.json();
+
+        // Populate company code filter
+        const companyCodeSelect = document.getElementById('exceptionCompanyCode');
+        companyCodeSelect.innerHTML = '<option value="">All Company Codes</option>';
+        data.company_codes.forEach(code => {
+            const option = document.createElement('option');
+            option.value = code;
+            option.textContent = code;
+            companyCodeSelect.appendChild(option);
+        });
+
+        // Populate house bank filter
+        const houseBankSelect = document.getElementById('exceptionHouseBank');
+        houseBankSelect.innerHTML = '<option value="">All House Banks</option>';
+        data.housebanks.forEach(bank => {
+            const option = document.createElement('option');
+            option.value = bank;
+            option.textContent = bank;
+            houseBankSelect.appendChild(option);
+        });
+
+        // Populate currency filter
+        const currencySelect = document.getElementById('exceptionCurrency');
+        currencySelect.innerHTML = '<option value="">All Currencies</option>';
+        data.currencies.forEach(curr => {
+            const option = document.createElement('option');
+            option.value = curr;
+            option.textContent = curr;
+            currencySelect.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Error loading filter options:', error);
+    }
+}
+
+// Load customer exceptions with optional filters
+async function loadCustomerExceptions() {
+    const companyCode = document.getElementById('exceptionCompanyCode').value;
+    const houseBank = document.getElementById('exceptionHouseBank').value;
+    const currency = document.getElementById('exceptionCurrency').value;
+    const businessPartner = document.getElementById('exceptionBusinessPartner').value;
+    const partnerKey = document.getElementById('exceptionPartnerKey').value;
+    const partnerRef = document.getElementById('exceptionPartnerRef').value;
+
+    const params = new URLSearchParams();
+    if (companyCode) params.append('company_code', companyCode);
+    if (houseBank) params.append('housebank', houseBank);
+    if (currency) params.append('currency', currency);
+    if (businessPartner) params.append('business_partner', businessPartner);
+    if (partnerKey) params.append('partner_key', partnerKey);
+    if (partnerRef) params.append('partner_ref', partnerRef);
+
+    try {
+        const response = await fetch(`/api/customer-exceptions?${params.toString()}`);
+        const data = await response.json();
+
+        renderExceptionsTable(data.exceptions);
+    } catch (error) {
+        console.error('Error loading customer exceptions:', error);
+        document.getElementById('exceptionsTableBody').innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 40px; color: var(--danger-color);">
+                    Error loading exceptions
+                </td>
+            </tr>
+        `;
+    }
+}
+
+// Render exceptions table
+function renderExceptionsTable(exceptions) {
+    const tbody = document.getElementById('exceptionsTableBody');
+
+    if (exceptions.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="8" style="text-align: center; padding: 40px; color: var(--text-secondary);">
+                    No exceptions found. Click "Add Exception" to create one.
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    tbody.innerHTML = '';
+
+    exceptions.forEach(exception => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${exception.company_code || '-'}</td>
+            <td>${exception.housebank || '-'}</td>
+            <td>${exception.currency || '-'}</td>
+            <td>${exception.business_partner || '-'}</td>
+            <td>${exception.partner_key || '-'}</td>
+            <td>${exception.partner_ref || '-'}</td>
+            <td>
+                <span class="exception-type-badge ${exception.exception_type}">
+                    ${exception.exception_type === 'included' ? 'Included' : 'Excluded'}
+                </span>
+            </td>
+            <td>
+                <button class="action-btn" onclick="editException(${exception.id})">
+                    <i class="fas fa-edit"></i> Edit
+                </button>
+                <button class="action-btn delete" onclick="deleteException(${exception.id})">
+                    <i class="fas fa-trash"></i> Delete
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Open modal for adding exception
+function openAddExceptionModal() {
+    document.getElementById('exceptionModalTitle').innerHTML = '<i class="fas fa-user-shield"></i> Add Customer Exception';
+    document.getElementById('exceptionId').value = '';
+    document.getElementById('modalCompanyCode').value = '';
+    document.getElementById('modalHouseBank').value = '';
+    document.getElementById('modalCurrency').value = '';
+    document.getElementById('modalBusinessPartner').value = '';
+    document.getElementById('modalPartnerKey').value = '';
+    document.getElementById('modalPartnerRef').value = '';
+    document.getElementById('modalExceptionType').value = '';
+    document.getElementById('exceptionModal').style.display = 'flex';
+}
+
+// Edit exception
+async function editException(id) {
+    try {
+        // Get all exceptions and find the one to edit
+        const response = await fetch('/api/customer-exceptions');
+        const data = await response.json();
+        const exception = data.exceptions.find(e => e.id === id);
+
+        if (!exception) {
+            alert('Exception not found');
+            return;
+        }
+
+        // Populate modal with exception data
+        document.getElementById('exceptionModalTitle').innerHTML = '<i class="fas fa-user-shield"></i> Edit Customer Exception';
+        document.getElementById('exceptionId').value = exception.id;
+        document.getElementById('modalCompanyCode').value = exception.company_code || '';
+        document.getElementById('modalHouseBank').value = exception.housebank || '';
+        document.getElementById('modalCurrency').value = exception.currency || '';
+        document.getElementById('modalBusinessPartner').value = exception.business_partner || '';
+        document.getElementById('modalPartnerKey').value = exception.partner_key || '';
+        document.getElementById('modalPartnerRef').value = exception.partner_ref || '';
+        document.getElementById('modalExceptionType').value = exception.exception_type || '';
+        document.getElementById('exceptionModal').style.display = 'flex';
+    } catch (error) {
+        console.error('Error loading exception for edit:', error);
+        alert('Error loading exception data');
+    }
+}
+
+// Delete exception
+async function deleteException(id) {
+    if (!confirm('Are you sure you want to delete this exception?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/customer-exceptions/${id}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            alert('Exception deleted successfully');
+            loadCustomerExceptions();
+        } else {
+            const error = await response.json();
+            alert(`Error deleting exception: ${error.error}`);
+        }
+    } catch (error) {
+        console.error('Error deleting exception:', error);
+        alert('Error deleting exception');
+    }
+}
+
+// Save exception (create or update)
+async function saveException() {
+    const id = document.getElementById('exceptionId').value;
+    const companyCode = document.getElementById('modalCompanyCode').value.trim();
+    const houseBank = document.getElementById('modalHouseBank').value.trim();
+    const currency = document.getElementById('modalCurrency').value.trim();
+    const businessPartner = document.getElementById('modalBusinessPartner').value.trim();
+    const partnerKey = document.getElementById('modalPartnerKey').value.trim();
+    const partnerRef = document.getElementById('modalPartnerRef').value.trim();
+    const exceptionType = document.getElementById('modalExceptionType').value;
+
+    // Validate required fields
+    if (!companyCode || !houseBank || !currency || !businessPartner || !exceptionType) {
+        alert('Please fill in all required fields (marked with *)');
+        return;
+    }
+
+    const exceptionData = {
+        company_code: companyCode,
+        housebank: houseBank,
+        currency: currency,
+        business_partner: businessPartner,
+        partner_key: partnerKey,
+        partner_ref: partnerRef,
+        exception_type: exceptionType
+    };
+
+    try {
+        let response;
+        if (id) {
+            // Update existing exception
+            response = await fetch(`/api/customer-exceptions/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(exceptionData)
+            });
+        } else {
+            // Create new exception
+            response = await fetch('/api/customer-exceptions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(exceptionData)
+            });
+        }
+
+        if (response.ok) {
+            alert(id ? 'Exception updated successfully' : 'Exception created successfully');
+            closeExceptionModal();
+            loadCustomerExceptions();
+        } else {
+            const error = await response.json();
+            alert(`Error saving exception: ${error.error}`);
+        }
+    } catch (error) {
+        console.error('Error saving exception:', error);
+        alert('Error saving exception');
+    }
+}
+
+// Close exception modal
+function closeExceptionModal() {
+    document.getElementById('exceptionModal').style.display = 'none';
+}
+
+// Setup customer exceptions event listeners
+function setupCustomerExceptionsListeners() {
+    // Add exception button
+    document.getElementById('addExceptionBtn').addEventListener('click', openAddExceptionModal);
+
+    // Apply filters button
+    document.getElementById('applyExceptionFiltersBtn').addEventListener('click', loadCustomerExceptions);
+
+    // Clear filters button
+    document.getElementById('clearExceptionFiltersBtn').addEventListener('click', () => {
+        document.getElementById('exceptionCompanyCode').value = '';
+        document.getElementById('exceptionHouseBank').value = '';
+        document.getElementById('exceptionCurrency').value = '';
+        document.getElementById('exceptionBusinessPartner').value = '';
+        document.getElementById('exceptionPartnerKey').value = '';
+        document.getElementById('exceptionPartnerRef').value = '';
+        loadCustomerExceptions();
+    });
+
+    // Save exception button
+    document.getElementById('saveExceptionBtn').addEventListener('click', saveException);
+
+    // Cancel modal button
+    document.getElementById('cancelExceptionModal').addEventListener('click', closeExceptionModal);
+
+    // Close modal button
+    document.getElementById('closeExceptionModal').addEventListener('click', closeExceptionModal);
+
+    // Close modal on backdrop click
+    document.getElementById('exceptionModal').addEventListener('click', (e) => {
+        if (e.target.id === 'exceptionModal') {
+            closeExceptionModal();
+        }
+    });
+}
+
+// Initialize Customer Exceptions functionality
+setupCustomerExceptionsNav();
+setupCustomerExceptionsListeners();

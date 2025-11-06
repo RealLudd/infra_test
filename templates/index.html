@@ -36,31 +36,37 @@
 
             <ul class="sidebar-menu">
                 <li>
-                    <a href="/" class="active">
+                    <a href="/" class="active" data-nav="dashboard">
                         <i class="fas fa-chart-line"></i>
                         Dashboard
                     </a>
                 </li>
                 <li>
-                    <a href="#transactions">
+                    <a href="#transactions" data-nav="transactions">
                         <i class="fas fa-exchange-alt"></i>
                         Transactions
                     </a>
                 </li>
                 <li>
-                    <a href="#reports">
+                    <a href="#customer-exceptions" data-nav="customer-exceptions">
+                        <i class="fas fa-user-shield"></i>
+                        Customer Exceptions
+                    </a>
+                </li>
+                <li>
+                    <a href="#reports" data-nav="reports">
                         <i class="fas fa-file-invoice-dollar"></i>
                         Reports
                     </a>
                 </li>
                 <li>
-                    <a href="#analytics">
+                    <a href="#analytics" data-nav="analytics">
                         <i class="fas fa-chart-pie"></i>
                         Analytics
                     </a>
                 </li>
                 <li>
-                    <a href="#settings">
+                    <a href="#settings" data-nav="settings">
                         <i class="fas fa-cog"></i>
                         Settings
                     </a>
@@ -334,6 +340,162 @@
                         <p>Loading transactions...</p>
                     </li>
                 </ul>
+            </div>
+
+            <!-- Customer Exceptions Section -->
+            <div class="customer-exceptions-section" id="customer-exceptions" style="display: none;">
+                <div class="card">
+                    <div class="card-header">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3><i class="fas fa-user-shield"></i> Customer Exceptions</h3>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">
+                                    Manage vendors included or excluded from auto-assignment
+                                </p>
+                            </div>
+                            <button class="btn" id="addExceptionBtn">
+                                <i class="fas fa-plus"></i> Add Exception
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="exception-filters">
+                        <div class="filter-grid">
+                            <div class="filter-group">
+                                <label for="exceptionCompanyCode">
+                                    <i class="fas fa-building"></i> Company Code
+                                </label>
+                                <select id="exceptionCompanyCode" class="filter-select">
+                                    <option value="">All Company Codes</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="exceptionHouseBank">
+                                    <i class="fas fa-university"></i> House Bank
+                                </label>
+                                <select id="exceptionHouseBank" class="filter-select">
+                                    <option value="">All House Banks</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="exceptionCurrency">
+                                    <i class="fas fa-euro-sign"></i> Currency
+                                </label>
+                                <select id="exceptionCurrency" class="filter-select">
+                                    <option value="">All Currencies</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label for="exceptionBusinessPartner">
+                                    <i class="fas fa-handshake"></i> Business Partner
+                                </label>
+                                <input type="text" id="exceptionBusinessPartner" class="filter-input" placeholder="Search business partner...">
+                            </div>
+                            <div class="filter-group">
+                                <label for="exceptionPartnerKey">
+                                    <i class="fas fa-key"></i> Partner Key
+                                </label>
+                                <input type="text" id="exceptionPartnerKey" class="filter-input" placeholder="Search partner key...">
+                            </div>
+                            <div class="filter-group">
+                                <label for="exceptionPartnerRef">
+                                    <i class="fas fa-tag"></i> Partner Ref (FR)
+                                </label>
+                                <input type="text" id="exceptionPartnerRef" class="filter-input" placeholder="Search partner ref...">
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button class="btn btn-primary" id="applyExceptionFiltersBtn">
+                                <i class="fas fa-filter"></i> Apply Filters
+                            </button>
+                            <button class="btn btn-secondary" id="clearExceptionFiltersBtn">
+                                <i class="fas fa-times"></i> Clear Filters
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Exceptions Table -->
+                    <div class="exceptions-table-container">
+                        <table class="exceptions-table" id="exceptionsTable">
+                            <thead>
+                                <tr>
+                                    <th>Company Code</th>
+                                    <th>House Bank</th>
+                                    <th>Currency</th>
+                                    <th>Business Partner</th>
+                                    <th>Partner Key</th>
+                                    <th>Partner Ref</th>
+                                    <th>Type</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="exceptionsTableBody">
+                                <tr>
+                                    <td colspan="8" style="text-align: center; padding: 40px;">
+                                        <div class="spinner"></div>
+                                        <p>Loading exceptions...</p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add/Edit Exception Modal -->
+            <div class="modal" id="exceptionModal" style="display: none;">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="exceptionModalTitle">
+                            <i class="fas fa-user-shield"></i> Add Customer Exception
+                        </h3>
+                        <button class="modal-close" id="closeExceptionModal">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" id="exceptionId">
+                        <div class="form-group">
+                            <label for="modalCompanyCode">Company Code *</label>
+                            <input type="text" id="modalCompanyCode" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="modalHouseBank">House Bank *</label>
+                            <input type="text" id="modalHouseBank" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="modalCurrency">Currency *</label>
+                            <input type="text" id="modalCurrency" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="modalBusinessPartner">Business Partner *</label>
+                            <input type="text" id="modalBusinessPartner" class="form-input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="modalPartnerKey">Partner Key</label>
+                            <input type="text" id="modalPartnerKey" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="modalPartnerRef">Partner Ref (FR only)</label>
+                            <input type="text" id="modalPartnerRef" class="form-input">
+                        </div>
+                        <div class="form-group">
+                            <label for="modalExceptionType">Exception Type *</label>
+                            <select id="modalExceptionType" class="form-input" required>
+                                <option value="">Select Type</option>
+                                <option value="included">Included (Allowed)</option>
+                                <option value="excluded">Excluded (Blocked)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" id="cancelExceptionModal">Cancel</button>
+                        <button class="btn btn-primary" id="saveExceptionBtn">
+                            <i class="fas fa-save"></i> Save Exception
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- Footer -->
