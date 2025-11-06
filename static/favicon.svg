@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00f2c3;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0098f0;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1d253b;stop-opacity:0.2" />
+      <stop offset="100%" style="stop-color:#1d253b;stop-opacity:0.05" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="50" cy="50" r="48" fill="url(#grad1)"/>
+  <circle cx="50" cy="50" r="45" fill="#1d253b"/>
+  
+  <!-- Euro Symbol with Modern Style -->
+  <path d="M 60 30 Q 68 30 72 35 L 67 40 Q 64 37 60 37 Q 52 37 48 45 L 58 45 L 56 50 L 48 50 Q 48 52 48 55 L 58 55 L 56 60 L 48 60 Q 52 68 60 68 Q 64 68 67 65 L 72 70 Q 68 75 60 75 Q 46 75 40 65 L 34 65 L 36 60 L 39 60 Q 38 57 38 55 L 34 55 L 36 50 L 38 50 Q 38 48 39 45 L 34 45 L 36 40 L 40 40 Q 46 30 60 30 Z" 
+        fill="url(#grad1)" 
+        stroke="url(#grad1)" 
+        stroke-width="1.5"/>
+  
+  <!-- Subtle shine effect -->
+  <circle cx="35" cy="35" r="8" fill="white" opacity="0.15"/>
+</svg>
+

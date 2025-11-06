@@ -7,52 +7,65 @@
 let currentPeriod = 'week';
 let currentChartPeriod = 'week';
 let automationChart = null;
+let currentBankAccount = '';  // Combined filter: "company_code|housebank|currency"
+let currentRegion = '';  // Region filter
+let currentCompanyCode = '';  // Company code filter
+let allBankAccounts = [];  // Store all bank accounts for cascading filters
 
-// Format currency with USD formatting
+// Format currency with EUR formatting
 function formatCurrency(amount) {
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: 'USD',
+        currency: 'EUR',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
     }).format(amount);
 }
 
+// Format number with thousand separators (e.g., 6,563)
+function formatNumber(number) {
+    return new Intl.NumberFormat('en-US').format(number);
+}
+
 // Load overview data from API
 async function loadOverview() {
     try {
-        const response = await fetch(`/api/overview?period=${currentPeriod}`);
+        const params = new URLSearchParams({
+            period: currentPeriod,
+            bank_account: currentBankAccount,
+            region: currentRegion,
+            company_code: currentCompanyCode
+        });
+        const response = await fetch(`/api/overview?${params}`);
         const data = await response.json();
 
-        // Update Total Payments Received
+        // 1. Update Total Payments Received (Amount)
         updateStatValue('totalReceived', formatCurrency(data.total_received));
-        document.getElementById('paymentCount').innerHTML =
-            `<span>${data.total_payments} payment${data.total_payments !== 1 ? 's' : ''}</span>`;
 
-        // Update Automation Percentage
+        // 2. Update Total Payments (Number)
+        updateStatValue('totalPayments', formatNumber(data.total_payments));
+
+        // 3. Update Processed Automatically
         updateStatValue('automationPercentage', `${data.automation_percentage}%`);
         document.getElementById('automationDetail').innerHTML =
-            `<span>${data.automated_count} auto / ${data.manual_count} manual</span>`;
+            `<span>${formatNumber(data.automated_count)} / ${formatNumber(data.total_payments)} payments</span>`;
 
-        // Update Unassigned Workload
-        updateStatValue('unassignedCount', data.unassigned_count.toString());
-        document.getElementById('unassignedValue').innerHTML =
-            `<span>${formatCurrency(data.unassigned_value)} value</span>`;
+        // 4. Update Payments Posted to Customer Accounts
+        updateStatValue('assignedAccountPercentage', `${data.assigned_percentage}%`);
+        document.getElementById('assignedAccountDetail').innerHTML =
+            `<span>${formatNumber(data.assigned_count)} / ${formatNumber(data.total_payments)} payments</span>`;
 
-        // Update Total Value Assigned
-        updateStatValue('totalAssigned', formatCurrency(data.total_assigned_value));
-        const assignedPct = data.total_received > 0
-            ? ((data.total_assigned_value / data.total_received) * 100).toFixed(1)
-            : 0;
-        document.getElementById('assignedPercentage').innerHTML =
-            `<span>${assignedPct}% of total</span>`;
+        // 5. Update Number of Invoices Cleared
+        updateStatValue('totalInvoices', formatNumber(data.total_invoices_assigned));
 
-        // Update Average Times
+        // 6. Update Invoices Amount Cleared (%)
+        updateStatValue('valueAssignedPercentage', `${data.value_assigned_percentage}%`);
+        document.getElementById('valueAssignedAmount').innerHTML =
+            `<span>${formatCurrency(data.total_assigned_value)} of total</span>`;
+
+        // 7. Update Average Time (Automation)
         updateStatValue('avgAutoTime', data.avg_auto_time_minutes > 0
             ? data.avg_auto_time_minutes.toFixed(1)
-            : '0');
-        updateStatValue('avgManualTime', data.avg_manual_time_minutes > 0
-            ? data.avg_manual_time_minutes.toFixed(1)
             : '0');
 
     } catch (error) {
@@ -64,7 +77,13 @@ async function loadOverview() {
 // Load automation trend data and render chart
 async function loadAutomationTrend() {
     try {
-        const response = await fetch(`/api/automation-trend?period=${currentChartPeriod}`);
+        const params = new URLSearchParams({
+            period: currentChartPeriod,
+            bank_account: currentBankAccount,
+            region: currentRegion,
+            company_code: currentCompanyCode
+        });
+        const response = await fetch(`/api/automation-trend?${params}`);
         const data = await response.json();
 
         renderAutomationChart(data);
@@ -83,29 +102,49 @@ function renderAutomationChart(data) {
         automationChart.destroy();
     }
 
-    // Create gradient for line
-    const gradient = ctx.createLinearGradient(0, 0, 0, 400);
-    gradient.addColorStop(0, 'rgba(29, 140, 248, 0.4)');
-    gradient.addColorStop(1, 'rgba(29, 140, 248, 0.0)');
+    // Create gradients for PACO and FRAN lines
+    const pacoGradient = ctx.createLinearGradient(0, 0, 0, 400);
+    pacoGradient.addColorStop(0, 'rgba(29, 140, 248, 0.3)');
+    pacoGradient.addColorStop(1, 'rgba(29, 140, 248, 0.0)');
+
+    const franGradient = ctx.createLinearGradient(0, 0, 0, 400);
+    franGradient.addColorStop(0, 'rgba(225, 78, 202, 0.3)');
+    franGradient.addColorStop(1, 'rgba(225, 78, 202, 0.0)');
 
     automationChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: data.labels,
-            datasets: [{
-                label: 'Automation %',
-                data: data.automation_percentages,
-                borderColor: '#1d8cf8',
-                backgroundColor: gradient,
-                borderWidth: 3,
-                fill: true,
-                tension: 0.4,
-                pointBackgroundColor: '#1d8cf8',
-                pointBorderColor: '#ffffff',
-                pointBorderWidth: 2,
-                pointRadius: 4,
-                pointHoverRadius: 6,
-            }]
+            datasets: [
+                {
+                    label: 'PACO Automation %',
+                    data: data.paco_percentages,
+                    borderColor: '#1d8cf8',
+                    backgroundColor: pacoGradient,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#1d8cf8',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                },
+                {
+                    label: 'FRAN Automation %',
+                    data: data.fran_percentages,
+                    borderColor: '#e14eca',
+                    backgroundColor: franGradient,
+                    borderWidth: 3,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#e14eca',
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                }
+            ]
         },
         options: {
             responsive: true,
@@ -130,16 +169,17 @@ function renderAutomationChart(data) {
                     borderColor: '#2b3553',
                     borderWidth: 1,
                     padding: 12,
-                    displayColors: false,
+                    displayColors: true,
                     callbacks: {
                         label: function(context) {
-                            const index = context.dataIndex;
+                            const systemName = context.dataset.label.split(' ')[0]; // Get PACO or FRAN
                             const percentage = context.parsed.y;
+                            return `${systemName}: ${percentage}%`;
+                        },
+                        footer: function(tooltipItems) {
+                            const index = tooltipItems[0].dataIndex;
                             const count = data.payment_counts[index];
-                            return [
-                                `Automation: ${percentage}%`,
-                                `Payments: ${count}`
-                            ];
+                            return `Total Payments: ${formatNumber(count)}`;
                         }
                     }
                 }
@@ -324,6 +364,199 @@ function handleChartPeriodChange(period) {
     loadAutomationTrend();
 }
 
+// Region mapping
+const REGION_MAP = {
+    'Iberia': ['0040', '0041'],
+    'France': ['0043'],
+    'NDX': ['0019', '0022', '0023', '0024'],
+    'UK': ['0014'],
+    'BNX': ['0012', '0018'],
+    'GerAus': ['0010', '0033'],
+    'PLN': ['0023']
+};
+
+// Load filter options from API
+async function loadFilterOptions() {
+    try {
+        console.log('Loading filter options...');
+        const response = await fetch('/api/filter-options');
+        const data = await response.json();
+        
+        console.log(`Loaded ${data.bank_accounts.length} bank accounts for filters`);
+        
+        // Store all bank accounts globally for cascading filters
+        allBankAccounts = data.bank_accounts;
+        
+        // Populate filters
+        updateFilterDropdowns();
+    } catch (error) {
+        console.error('Error loading filter options:', error);
+    }
+}
+
+// Update filter dropdowns based on current selections (cascading filters)
+function updateFilterDropdowns() {
+    const regionFilter = document.getElementById('regionFilter')?.value || '';
+    const companyCodeFilter = document.getElementById('companyCodeFilterOnly')?.value || '';
+    
+    // Filter bank accounts based on region or company code
+    let filteredAccounts = allBankAccounts;
+    let availableCompanyCodes = [];
+    
+    if (regionFilter && REGION_MAP[regionFilter]) {
+        // Filter by region
+        const regionCodes = REGION_MAP[regionFilter];
+        filteredAccounts = allBankAccounts.filter(acc => {
+            const code = acc.value.split('|')[0];
+            return regionCodes.includes(code);
+        });
+        availableCompanyCodes = regionCodes;
+    } else if (companyCodeFilter) {
+        // Filter by company code
+        filteredAccounts = allBankAccounts.filter(acc => {
+            const code = acc.value.split('|')[0];
+            return code === companyCodeFilter;
+        });
+        availableCompanyCodes = [companyCodeFilter];
+    } else {
+        // No filter - show all
+        availableCompanyCodes = [...new Set(allBankAccounts.map(acc => acc.value.split('|')[0]))].sort();
+    }
+    
+    // Update Company Code dropdown
+    const companyCodeSelect = document.getElementById('companyCodeFilterOnly');
+    if (companyCodeSelect) {
+        const currentValue = companyCodeSelect.value;
+        companyCodeSelect.innerHTML = '<option value="">All Company Codes</option>';
+        
+        availableCompanyCodes.sort().forEach(code => {
+            const option = document.createElement('option');
+            option.value = code;
+            option.textContent = code;
+            if (code === currentValue) {
+                option.selected = true;
+            }
+            companyCodeSelect.appendChild(option);
+        });
+    }
+    
+    // Update Bank Account dropdown
+    const bankAccountSelect = document.getElementById('bankAccountFilter');
+    if (bankAccountSelect) {
+        const currentValue = bankAccountSelect.value;
+        bankAccountSelect.innerHTML = '<option value="">All Bank Accounts</option>';
+        
+        filteredAccounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.value;
+            option.textContent = account.label;
+            if (account.value === currentValue) {
+                option.selected = true;
+            }
+            bankAccountSelect.appendChild(option);
+        });
+    }
+    
+    console.log(`Updated dropdowns - ${availableCompanyCodes.length} company codes, ${filteredAccounts.length} bank accounts`);
+}
+
+// Handle filter change
+function handleFilterChange() {
+    currentBankAccount = document.getElementById('bankAccountFilter').value;
+
+    // Reload data with new filter
+    loadOverview();
+    loadAutomationTrend();
+}
+
+// Clear all filters
+function clearAllFilters() {
+    document.getElementById('bankAccountFilter').value = '';
+    document.getElementById('regionFilter').value = '';
+    document.getElementById('companyCodeFilterOnly').value = '';
+    currentBankAccount = '';
+    currentRegion = '';
+    currentCompanyCode = '';
+
+    // Reset dropdowns to show all options
+    updateFilterDropdowns();
+
+    // Reload data without filters
+    loadOverview();
+    loadAutomationTrend();
+    filterCompanyStatus();
+}
+
+// Filter company status cards and reload overview data
+function filterCompanyStatus() {
+    const regionFilter = document.getElementById('regionFilter')?.value || '';
+    const companyCodeFilter = document.getElementById('companyCodeFilterOnly')?.value || '';
+    
+    // Update global filter state
+    currentRegion = regionFilter;
+    currentCompanyCode = companyCodeFilter;
+    
+    console.log(`Filtering - Region: "${regionFilter}", Company Code: "${companyCodeFilter}"`);
+    
+    // Reload overview and trend data with new filters
+    loadOverview();
+    loadAutomationTrend();
+    
+    const cards = document.querySelectorAll('.company-status-card');
+    let visibleCount = 0;
+    
+    if (cards.length === 0) {
+        console.log('No cards found to filter - cards not loaded yet?');
+        return;
+    }
+    
+    // Debug: show all company codes in cards
+    const allCodes = Array.from(cards).map(c => c.getAttribute('data-company-code'));
+    console.log(`All company codes in cards: [${allCodes.join(', ')}]`);
+    
+    if (regionFilter) {
+        console.log(`Region "${regionFilter}" maps to codes: [${REGION_MAP[regionFilter]?.join(', ') || 'NOT FOUND'}]`);
+    }
+    
+    cards.forEach(card => {
+        // Get company code from data attribute (more reliable than parsing text)
+        const companyCode = card.getAttribute('data-company-code');
+        
+        if (!companyCode) {
+            console.warn('Card missing data-company-code attribute:', card);
+            return;
+        }
+        
+        let show = true;
+        let hideReason = '';
+        
+        // Apply region filter
+        if (regionFilter && REGION_MAP[regionFilter]) {
+            show = REGION_MAP[regionFilter].includes(companyCode);
+            if (!show) {
+                hideReason = `not in region ${regionFilter} (expected: ${REGION_MAP[regionFilter].join(', ')})`;
+            }
+        }
+        
+        // Apply company code filter
+        if (companyCodeFilter && show) {
+            show = companyCode === companyCodeFilter;
+            if (!show) {
+                hideReason = `doesn't match filter "${companyCodeFilter}" (card has "${companyCode}")`;
+            }
+        }
+        
+        if (!show) {
+            console.log(`  Hiding ${companyCode} - ${hideReason}`);
+        }
+        
+        if (show) visibleCount++;
+        card.style.display = show ? '' : 'none';
+    });
+    
+    console.log(`Filter result: ${visibleCount} cards visible out of ${cards.length}`);
+}
+
 // Initialize dashboard
 document.addEventListener('DOMContentLoaded', () => {
     console.log('CashWeb Dashboard initializing...');
@@ -348,6 +581,76 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
+    // Setup filter event listeners
+    document.getElementById('bankAccountFilter').addEventListener('change', handleFilterChange);
+    document.getElementById('regionFilter').addEventListener('change', () => {
+        updateFilterDropdowns();  // Update cascading dropdowns
+        filterCompanyStatus();    // Apply filter
+    });
+    document.getElementById('companyCodeFilterOnly').addEventListener('change', () => {
+        updateFilterDropdowns();  // Update cascading dropdowns
+        filterCompanyStatus();    // Apply filter
+    });
+    document.getElementById('clearFiltersBtn').addEventListener('click', clearAllFilters);
+
+    // Setup refresh data button
+    const refreshBtn = document.getElementById('refreshDataBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            const now = new Date().toLocaleTimeString();
+            console.log(`🔄 Manual refresh triggered at ${now}`);
+            
+            // Add spinning animation to refresh icon
+            const icon = refreshBtn.querySelector('i');
+            icon.classList.add('fa-spin');
+            
+            // Disable button during refresh
+            refreshBtn.disabled = true;
+            
+            // Reload live data sections
+            Promise.all([
+                loadCompanyStatus(),
+                loadRecentTransactions()
+            ]).then(() => {
+                // Remove spinning animation
+                icon.classList.remove('fa-spin');
+                refreshBtn.disabled = false;
+                console.log(`✅ Live data refreshed successfully at ${new Date().toLocaleTimeString()}`);
+                
+                // Show a brief success indicator
+                refreshBtn.style.backgroundColor = 'rgba(0, 242, 195, 0.2)';
+                setTimeout(() => {
+                    refreshBtn.style.backgroundColor = '';
+                }, 1000);
+            }).catch(error => {
+                icon.classList.remove('fa-spin');
+                refreshBtn.disabled = false;
+                console.error('❌ Error refreshing data:', error);
+            });
+        });
+    }
+
+    // Setup smooth scrolling for sidebar navigation links
+    document.querySelectorAll('.sidebar a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function (e) {
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+
+            if (targetElement) {
+                e.preventDefault();
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+
+                // Close sidebar on mobile after clicking
+                if (window.innerWidth <= 991) {
+                    document.querySelector('.sidebar').classList.remove('active');
+                }
+            }
+        });
+    });
+
     // Close sidebar when clicking outside on mobile
     document.addEventListener('click', (e) => {
         const sidebar = document.querySelector('.sidebar');
@@ -362,19 +665,187 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Load initial data
+    loadFilterOptions();
     loadOverview();
     loadAutomationTrend();
-    loadTransactions();
+    loadCompanyStatus();
+    loadRecentTransactions();
 
     console.log('Dashboard loaded successfully');
 });
 
-// Auto-refresh data every 60 seconds
+// Load company code processing status
+async function loadCompanyStatus() {
+    try {
+        // Add cache buster to ensure fresh data
+        const cacheBuster = new Date().getTime();
+        const response = await fetch(`/api/company-status?_=${cacheBuster}`);
+        const data = await response.json();
+
+        const timestamp = new Date().toLocaleTimeString();
+        console.log(`Company status loaded: ${data.company_statuses.length} accounts at ${timestamp}`);
+
+        // Update timestamp display
+        const timestampElement = document.getElementById('companyStatusTimestamp');
+        if (timestampElement) {
+            timestampElement.textContent = timestamp;
+        }
+
+        const grid = document.getElementById('companyStatusGrid');
+        grid.innerHTML = '';
+        
+        // Add a subtle flash effect to show refresh
+        grid.style.opacity = '0.5';
+        setTimeout(() => { grid.style.opacity = '1'; }, 100);
+
+        data.company_statuses.forEach(company => {
+            const statusClass = company.status.toLowerCase().replace(' ', '-');
+            const card = document.createElement('div');
+            card.className = `company-status-card ${statusClass}`;
+            
+            // Store company code as data attribute for filtering
+            card.setAttribute('data-company-code', company.company_code);
+
+            // Use real start/end times from API
+            const startTime = company.start_time ? new Date(company.start_time) : null;
+            const endTime = company.end_time ? new Date(company.end_time) : null;
+            
+            const formatTime = (date) => date ? date.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'}) : '--:--';
+
+            const matchedPercentage = company.matched_percentage || 0;
+            const valuePercentage = company.value_assigned_percentage || 0;
+            
+            card.innerHTML = `
+                <div class="company-status-header">
+                    <div class="company-code-label">
+                        <div class="company-code-main">
+                            <i class="fas fa-building"></i>
+                            ${company.company_code}
+                        </div>
+                        <div class="company-code-details">
+                            ${company.housebank} • ${company.currency}
+                        </div>
+                    </div>
+                    <span class="status-badge ${statusClass}">${company.status}</span>
+                </div>
+                <div class="company-progress">
+                    <div class="progress-info">
+                        <span>Processed Automatically</span>
+                        <span><strong>${matchedPercentage}%</strong></span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: ${matchedPercentage}%"></div>
+                    </div>
+                </div>
+                <div class="company-progress" style="margin-top: 8px;">
+                    <div class="progress-info">
+                        <span>Invoices Amount Cleared</span>
+                        <span><strong>${valuePercentage}%</strong></span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: ${valuePercentage}%; background: linear-gradient(90deg, #fd5d93 0%, #ec250d 100%);"></div>
+                    </div>
+                </div>
+                <div class="company-time-info">
+                    <span><span class="time-label">Start:</span>${formatTime(startTime)}</span>
+                    <span><span class="time-label">End:</span>${formatTime(endTime)}</span>
+                </div>
+                <div class="company-details">
+                    <span><i class="fas fa-user-check"></i> Posted to Customer Accounts: ${company.customers_assigned || 0}</span>
+                    <span><i class="fas fa-file-invoice"></i> Invoices Cleared: ${company.invoices_assigned || 0}</span>
+                </div>
+                <div class="company-details">
+                    <span><i class="fas fa-list"></i> Total Payments Received: ${company.total}</span>
+                </div>
+                <div class="sap-login-hint">
+                    <i class="fas fa-info-circle"></i> Ready for SAP login
+                </div>
+            `;
+
+            grid.appendChild(card);
+        });
+        
+        // Apply any active filters after cards are loaded
+        filterCompanyStatus();
+    } catch (error) {
+        console.error('Error loading company status:', error);
+        showNotification('Error loading company status', 'error');
+    }
+}
+
+// Load recent transactions from today's live data
+async function loadRecentTransactions() {
+    try {
+        // Add cache buster to ensure fresh data
+        const cacheBuster = new Date().getTime();
+        const response = await fetch(`/api/recent-transactions?_=${cacheBuster}`);
+        const data = await response.json();
+        
+        console.log(`Recent transactions loaded: ${data.transactions.length} transactions at ${new Date().toLocaleTimeString()}`);
+
+        const listElement = document.getElementById('transactionList');
+        listElement.innerHTML = '';
+
+        if (data.transactions.length === 0) {
+            listElement.innerHTML = `
+                <li class="loading">
+                    <p>No transactions found</p>
+                </li>
+            `;
+            return;
+        }
+
+        data.transactions.forEach(transaction => {
+            const li = document.createElement('li');
+            const isMatch = transaction.match === 'YES';
+            const typeClass = isMatch ? 'income' : 'expense';
+            const icon = isMatch ? '✓' : '⏳';
+
+            // Determine automation badge
+            let automationBadge = '';
+            if (transaction.match === 'YES') {
+                automationBadge = '<span style="background: rgba(0, 242, 195, 0.2); color: var(--success-color); padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; margin-left: 8px;">AUTO</span>';
+            } else {
+                automationBadge = '<span style="background: rgba(255, 141, 114, 0.2); color: var(--warning-color); padding: 3px 8px; border-radius: 4px; font-size: 0.7rem; margin-left: 8px;">PENDING</span>';
+            }
+
+            const bankAccount = `${transaction.company_code}-${transaction.housebank}-${transaction.currency}`;
+            const description = `Payment ${transaction.payment_number} - ${bankAccount}${transaction.business_partner ? ' - ' + transaction.business_partner : ''}`;
+
+            li.className = `transaction-item ${typeClass}`;
+            li.innerHTML = `
+                <div class="transaction-info">
+                    <div class="transaction-date">
+                        <i class="far fa-calendar"></i> ${transaction.payment_date}
+                    </div>
+                    <div class="transaction-description">
+                        ${icon} ${description} ${automationBadge}
+                    </div>
+                </div>
+                <div class="transaction-amount ${typeClass}">
+                    ${formatCurrency(Math.abs(transaction.amount))}
+                </div>
+            `;
+
+            listElement.appendChild(li);
+        });
+    } catch (error) {
+        console.error('Error loading recent transactions:', error);
+        const listElement = document.getElementById('transactionList');
+        listElement.innerHTML = `
+            <li class="loading">
+                <p style="color: var(--danger-color);">Error loading transactions</p>
+            </li>
+        `;
+    }
+}
+
+// Live data polling (every 5 minutes for company status and recent transactions)
 setInterval(() => {
-    loadOverview();
-    loadAutomationTrend();
-    loadTransactions();
-}, 60000);
+    console.log('Polling live data (5-minute interval)...');
+    loadCompanyStatus();
+    loadRecentTransactions();
+}, 300000); // 5 minutes = 300,000 milliseconds
 
 // Handle window resize
 let resizeTimer;

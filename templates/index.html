@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CashWeb - Black Dashboard</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='favicon.svg') }}">
+
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
@@ -24,6 +27,11 @@
             <div class="sidebar-brand">
                 <h1><i class="fas fa-wallet"></i> CashWeb</h1>
                 <p>Cash Management System</p>
+                <div style="margin-top: 15px; padding: 10px; text-align: center;">
+                    <img src="{{ url_for('static', filename='images/td_synnex_logo.png') }}"
+                         alt="TD SYNNEX"
+                         style="max-width: 140px; opacity: 0.9;">
+                </div>
             </div>
 
             <ul class="sidebar-menu">
@@ -81,7 +89,7 @@
                     <h2><i class="fas fa-chart-line"></i> Dashboard Overview</h2>
                 </div>
                 <div class="navbar-actions">
-                    <button title="Refresh Data">
+                    <button id="refreshDataBtn" title="Refresh Data">
                         <i class="fas fa-sync-alt"></i>
                     </button>
                     <button title="Notifications">
@@ -109,15 +117,58 @@
                 </div>
             </div>
 
+            <!-- Bank Account and Region Filters -->
+            <div class="additional-filters">
+                <div class="filter-header">
+                    <h3><i class="fas fa-filter"></i> Filters</h3>
+                    <button class="clear-filters-btn" id="clearFiltersBtn">
+                        <i class="fas fa-times"></i> Clear Filters
+                    </button>
+                </div>
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <label for="regionFilter">
+                            <i class="fas fa-globe"></i> Region
+                        </label>
+                        <select id="regionFilter" class="filter-select">
+                            <option value="">All Regions</option>
+                            <option value="Iberia">Iberia (0040, 0041)</option>
+                            <option value="France">France (0043)</option>
+                            <option value="NDX">NDX (0019, 0022, 0023, 0024)</option>
+                            <option value="UK">UK (0014)</option>
+                            <option value="BNX">BNX (0012, 0018)</option>
+                            <option value="GerAus">GerAus (0010, 0033)</option>
+                            <option value="PLN">PLN (0023)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="companyCodeFilterOnly">
+                            <i class="fas fa-building"></i> Company Code
+                        </label>
+                        <select id="companyCodeFilterOnly" class="filter-select">
+                            <option value="">All Company Codes</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="bankAccountFilter">
+                            <i class="fas fa-university"></i> Bank Account Configuration
+                        </label>
+                        <select id="bankAccountFilter" class="filter-select">
+                            <option value="">All Bank Accounts</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
             <!-- Daily/Weekly Overview -->
             <div class="overview-section">
                 <h3 class="section-title"><i class="fas fa-home"></i> Daily / Weekly Overview</h3>
 
                 <div class="stats-grid">
-                    <!-- Total Payments Received -->
+                    <!-- 1. Total Payments Received (Amount) -->
                     <div class="stat-card">
                         <div class="stat-header">
-                            <div class="stat-label">💰 Total Payments Received</div>
+                            <div class="stat-label">💰 Total Received (Amount)</div>
                             <div class="stat-icon income">
                                 <i class="fas fa-coins"></i>
                             </div>
@@ -125,12 +176,28 @@
                         <div class="stat-value" id="totalReceived">
                             <div class="spinner"></div>
                         </div>
-                        <div class="stat-info" id="paymentCount">
-                            <span>-- payments</span>
+                        <div class="stat-info">
+                            <span>Payment value</span>
                         </div>
                     </div>
 
-                    <!-- Automation Percentage -->
+                    <!-- 2. Total Payments Received (Number) -->
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">📊 Total Payments</div>
+                            <div class="stat-icon count">
+                                <i class="fas fa-hashtag"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="totalPayments">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="stat-info">
+                            <span>Payment count</span>
+                        </div>
+                    </div>
+
+                    <!-- 3. Processed Automatically (Percentage showing count) -->
                     <div class="stat-card">
                         <div class="stat-header">
                             <div class="stat-label">⚙️ Processed Automatically</div>
@@ -142,43 +209,59 @@
                             <div class="spinner"></div>
                         </div>
                         <div class="stat-info" id="automationDetail">
-                            <span>-- auto / -- manual</span>
+                            <span>-- / -- payments</span>
                         </div>
                     </div>
 
-                    <!-- Unassigned Workload -->
+                    <!-- 4. Number of Payments Posted to Customer Accounts (%) -->
                     <div class="stat-card">
                         <div class="stat-header">
-                            <div class="stat-label">📉 Unassigned Workload</div>
-                            <div class="stat-icon expense">
-                                <i class="fas fa-exclamation-triangle"></i>
+                            <div class="stat-label">👥 Payments Posted to Customer Accounts</div>
+                            <div class="stat-icon success">
+                                <i class="fas fa-user-check"></i>
                             </div>
                         </div>
-                        <div class="stat-value warning" id="unassignedCount">
+                        <div class="stat-value success" id="assignedAccountPercentage">
                             <div class="spinner"></div>
                         </div>
-                        <div class="stat-info" id="unassignedValue">
-                            <span>$-- value</span>
+                        <div class="stat-info" id="assignedAccountDetail">
+                            <span>-- / -- payments</span>
                         </div>
                     </div>
 
-                    <!-- Total Value Assigned -->
+                    <!-- 5. Number of Invoices Cleared from Customer -->
                     <div class="stat-card">
                         <div class="stat-header">
-                            <div class="stat-label">💼 Total Value Assigned</div>
+                            <div class="stat-label">📄 Invoices Cleared</div>
+                            <div class="stat-icon income">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                        </div>
+                        <div class="stat-value" id="totalInvoices">
+                            <div class="spinner"></div>
+                        </div>
+                        <div class="stat-info">
+                            <span>Total invoices</span>
+                        </div>
+                    </div>
+
+                    <!-- 6. Invoices Amount Cleared (%) -->
+                    <div class="stat-card">
+                        <div class="stat-header">
+                            <div class="stat-label">💼 Invoices Amount Cleared</div>
                             <div class="stat-icon count">
                                 <i class="fas fa-check-circle"></i>
                             </div>
                         </div>
-                        <div class="stat-value" id="totalAssigned">
+                        <div class="stat-value" id="valueAssignedPercentage">
                             <div class="spinner"></div>
                         </div>
-                        <div class="stat-info" id="assignedPercentage">
-                            <span>-- of total</span>
+                        <div class="stat-info" id="valueAssignedAmount">
+                            <span>€-- of total</span>
                         </div>
                     </div>
 
-                    <!-- Average Auto Time -->
+                    <!-- 7. Average Time (Automation) -->
                     <div class="stat-card">
                         <div class="stat-header">
                             <div class="stat-label">⏱️ Avg Time (Automation)</div>
@@ -187,22 +270,6 @@
                             </div>
                         </div>
                         <div class="stat-value success" id="avgAutoTime">
-                            <div class="spinner"></div>
-                        </div>
-                        <div class="stat-info">
-                            <span>minutes</span>
-                        </div>
-                    </div>
-
-                    <!-- Average Manual Time -->
-                    <div class="stat-card">
-                        <div class="stat-header">
-                            <div class="stat-label">⏱️ Avg Time (Manual)</div>
-                            <div class="stat-icon warning">
-                                <i class="fas fa-hourglass-half"></i>
-                            </div>
-                        </div>
-                        <div class="stat-value warning" id="avgManualTime">
                             <div class="spinner"></div>
                         </div>
                         <div class="stat-info">
@@ -229,13 +296,36 @@
                 </div>
             </div>
 
+            <!-- Company Code Status Section -->
+            <div class="company-status-section" id="transactions">
+                <div class="card">
+                    <div class="card-header">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <h3><i class="fas fa-building"></i> Company Code Processing Status</h3>
+                                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 5px;">
+                                    Login to SAP when company code processing is complete
+                                </p>
+                            </div>
+                            <div style="text-align: right; font-size: 0.75rem; color: var(--text-secondary);">
+                                <i class="fas fa-clock"></i> Last updated:<br>
+                                <span id="companyStatusTimestamp" style="color: var(--success-color);">--:--</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="company-status-grid" id="companyStatusGrid">
+                        <div class="loading" style="text-align: center; padding: 40px;">
+                            <div class="spinner"></div>
+                            <p>Loading company status...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Transactions Section -->
             <div class="transactions-card">
                 <div class="card-header">
                     <h3><i class="fas fa-history"></i> Recent Transactions</h3>
-                    <button class="btn">
-                        <i class="fas fa-plus"></i> Add Transaction
-                    </button>
                 </div>
 
                 <ul class="transaction-list" id="transactionList">
@@ -249,8 +339,8 @@
             <!-- Footer -->
             <div class="footer">
                 <p>
-                    <i class="fas fa-code"></i> CashWeb v2.0 - Black Dashboard Theme |
-                    Built with <i class="fas fa-heart" style="color: var(--danger-color);"></i> using Flask
+                    <i class="fas fa-code"></i> CashWeb |
+                    Built with ❤️ by BPA
                 </p>
             </div>
         </div>
