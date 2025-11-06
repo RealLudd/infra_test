@@ -366,27 +366,42 @@ const REGION_MAP = {
 // Load filter options from API
 async function loadFilterOptions() {
     try {
+        console.log('Loading filter options...');
         const response = await fetch('/api/filter-options');
         const data = await response.json();
+        
+        console.log(`Loaded ${data.bank_accounts.length} bank accounts for filters`);
 
         // Populate bank account filter
         const bankAccountSelect = document.getElementById('bankAccountFilter');
+        if (!bankAccountSelect) {
+            console.error('Bank account select element not found!');
+            return;
+        }
+        
         data.bank_accounts.forEach(account => {
             const option = document.createElement('option');
             option.value = account.value;
             option.textContent = account.label;
             bankAccountSelect.appendChild(option);
         });
+        console.log(`Added ${data.bank_accounts.length} options to bank account filter`);
 
         // Populate company code filter
         const companyCodes = [...new Set(data.bank_accounts.map(acc => acc.value.split('|')[0]))].sort();
         const companyCodeSelect = document.getElementById('companyCodeFilterOnly');
+        if (!companyCodeSelect) {
+            console.error('Company code select element not found!');
+            return;
+        }
+        
         companyCodes.forEach(code => {
             const option = document.createElement('option');
             option.value = code;
             option.textContent = code;
             companyCodeSelect.appendChild(option);
         });
+        console.log(`Added ${companyCodes.length} unique company codes to company code filter`);
     } catch (error) {
         console.error('Error loading filter options:', error);
     }
