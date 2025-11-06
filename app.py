@@ -149,18 +149,17 @@ def process_live_excel_file(filepath):
 def get_live_data(automation_type='PACO'):
     """
     Read today's files from network path for real-time data.
-    Since bank payments from yesterday are received today, we read yesterday's data.
     Returns list of processed bank account records.
     """
     network_path = PACO_NETWORK_PATH if automation_type == 'PACO' else FRAN_NETWORK_PATH
     
-    # Get yesterday's date (bank payments from yesterday are processed today)
-    yesterday = date.today() - timedelta(days=1)
-    yesterday_str = yesterday.strftime('%Y%m%d')
-    month_str = yesterday.strftime('%Y%m')
+    # Get today's date to monitor current processing
+    today = date.today()
+    today_str = today.strftime('%Y%m%d')
+    month_str = today.strftime('%Y%m')
     
-    # Build path to yesterday's folder (today's live data)
-    today_path = os.path.join(network_path, month_str, yesterday_str)
+    # Build path to today's folder for live data
+    today_path = os.path.join(network_path, month_str, today_str)
     
     records = []
     
@@ -201,26 +200,26 @@ def get_overview():
             company_code, housebank, currency = parts
     
     # Calculate date range
-    # Note: "Today" means yesterday's bank payments (received today)
+    # Note: "Today" shows current day's live data from network path
     today = date.today()
     yesterday = today - timedelta(days=1)
     
     if period == 'today':
-        # Today = yesterday's data only (from live files)
-        start_date = yesterday
-        end_date = yesterday - timedelta(days=1)  # No historical data for "today"
+        # Today = only live data (no historical data)
+        start_date = today
+        end_date = today - timedelta(days=1)  # No historical data for "today"
     elif period == 'week':
-        start_date = yesterday - timedelta(days=7)
-        end_date = yesterday - timedelta(days=2)  # Exclude yesterday (it's live)
+        start_date = today - timedelta(days=7)
+        end_date = yesterday  # Exclude today (it's live)
     elif period == 'month':
-        start_date = yesterday - timedelta(days=30)
-        end_date = yesterday - timedelta(days=2)
+        start_date = today - timedelta(days=30)
+        end_date = yesterday
     elif period == 'quarter':
-        start_date = yesterday - timedelta(days=90)
-        end_date = yesterday - timedelta(days=2)
+        start_date = today - timedelta(days=90)
+        end_date = yesterday
     else:
-        start_date = yesterday
-        end_date = yesterday - timedelta(days=1)
+        start_date = today
+        end_date = today - timedelta(days=1)
     
     # Initialize totals
     total_payments = 0
@@ -327,8 +326,9 @@ def get_automation_trend():
             company_code, housebank, currency = parts
     
     # Calculate date range
-    # Note: Latest data is from yesterday (today's live data)
-    yesterday = date.today() - timedelta(days=1)
+    # Note: Charts show historical data only (up to yesterday)
+    today = date.today()
+    yesterday = today - timedelta(days=1)
     
     if period == 'week':
         days = 7
@@ -340,7 +340,7 @@ def get_automation_trend():
         days = 7
     
     start_date = yesterday - timedelta(days=days)
-    today = yesterday  # For chart purposes, "today" is yesterday
+    end_date = yesterday  # Charts show up to yesterday
     
     # Load historical data
     df = load_historical_data()
@@ -360,7 +360,7 @@ def get_automation_trend():
         })
     
     # Filter by date range and bank account
-    mask = (df['date'] >= start_date) & (df['date'] <= today)
+    mask = (df['date'] >= start_date) & (df['date'] <= end_date)
     if bank_account:
         mask &= (df['company_code'] == company_code) & \
                 (df['housebank'] == housebank) & \
