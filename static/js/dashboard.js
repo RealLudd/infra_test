@@ -469,6 +469,31 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('companyCodeFilterOnly').addEventListener('change', filterCompanyStatus);
     document.getElementById('clearFiltersBtn').addEventListener('click', clearAllFilters);
 
+    // Setup refresh data button
+    const refreshBtn = document.getElementById('refreshDataBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            console.log('Refreshing live data...');
+            
+            // Add spinning animation to refresh icon
+            const icon = refreshBtn.querySelector('i');
+            icon.classList.add('fa-spin');
+            
+            // Reload live data sections
+            Promise.all([
+                loadCompanyStatus(),
+                loadRecentTransactions()
+            ]).then(() => {
+                // Remove spinning animation
+                icon.classList.remove('fa-spin');
+                console.log('Live data refreshed successfully');
+            }).catch(error => {
+                icon.classList.remove('fa-spin');
+                console.error('Error refreshing data:', error);
+            });
+        });
+    }
+
     // Setup smooth scrolling for sidebar navigation links
     document.querySelectorAll('.sidebar a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {

@@ -55,11 +55,15 @@ if errorlevel 1 (
     echo ========================================================
     echo.
     echo To refresh the data:
-    echo   1. Click the period buttons (Today/Week/Month/Quarter)
-    echo   2. Or press F5 to refresh the page
+    echo   1. Click the REFRESH button (sync icon) in top-right corner
+    echo   2. Click period buttons (Today/Week/Month/Quarter) for overview
+    echo   3. Or press F5 to refresh entire page
     echo.
-    echo Company Status and Recent Transactions auto-refresh
-    echo every 5 minutes.
+    echo The refresh button updates:
+    echo   - Company Code Processing Status
+    echo   - Recent Transactions
+    echo.
+    echo These sections also auto-refresh every 5 minutes.
     echo ========================================================
     echo.
 )
