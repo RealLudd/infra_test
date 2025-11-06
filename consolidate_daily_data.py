@@ -32,7 +32,7 @@ def count_invoices(docnumbers_str):
     invoices = [inv.strip() for inv in str(docnumbers_str).split(';') if inv.strip()]
     return len(invoices)
 
-def process_output_file(filepath):
+def process_output_file(filepath, data_date):
     """Process a single PACO output file and extract metrics."""
     try:
         print(f"  Processing: {os.path.basename(filepath)}")
@@ -44,37 +44,52 @@ def process_output_file(filepath):
         company_code, housebank, currency = parse_filename(filename)
         
         if not all([company_code, housebank, currency]):
-            print(f"  ⚠️  Could not parse filename: {filename}")
+            print(f"  WARNING: Could not parse filename: {filename}")
             return None
         
         # Normalize company code (remove leading zeros)
         company_code = str(int(company_code))
         
+        # Determine which DocNumbers column to use
+        docnumbers_col = None
+        if 'DocNumbers' in df.columns:
+            docnumbers_col = 'DocNumbers'
+        elif 'Docnumbers' in df.columns:
+            docnumbers_col = 'Docnumbers'
+        
         # Calculate metrics
         total_payments = len(df)
         total_received = df['Amount'].sum() if 'Amount' in df.columns else 0
-        automated_count = len(df[df['Match'] == 'YES']) if 'Match' in df.columns else 0
+        
+        # Automated count: Match == "Yes" (case insensitive) AND has invoices
+        automated_count = 0
+        if 'Match' in df.columns and docnumbers_col:
+            automated_mask = (df['Match'].str.upper() == 'YES') & (df[docnumbers_col].notna()) & (df[docnumbers_col] != '')
+            automated_count = len(df[automated_mask])
+        
         assigned_to_account = len(df[df['Business_Partner'].notna()]) if 'Business_Partner' in df.columns else 0
         
         invoices_assigned = 0
-        if 'Docnumbers' in df.columns:
-            invoices_assigned = df['Docnumbers'].apply(count_invoices).sum()
+        if docnumbers_col:
+            invoices_assigned = df[docnumbers_col].apply(count_invoices).sum()
         
+        # Value assigned: Amount for rows where Match == "Yes" AND has invoices
         value_assigned = 0
-        if 'Match' in df.columns and 'Amount' in df.columns:
-            value_assigned = df[df['Match'] == 'YES']['Amount'].sum()
+        if 'Match' in df.columns and 'Amount' in df.columns and docnumbers_col:
+            value_mask = (df['Match'].str.upper() == 'YES') & (df[docnumbers_col].notna()) & (df[docnumbers_col] != '')
+            value_assigned = df[value_mask]['Amount'].sum()
         
         # Convert amounts to EUR
         total_received_eur = convert_to_eur(total_received, currency)
         value_assigned_eur = convert_to_eur(value_assigned, currency)
         
-        # Get file timestamp
+        # Get file timestamp for processing time calculation
         file_timestamp = datetime.fromtimestamp(os.path.getmtime(filepath))
         start_of_day = datetime.combine(file_timestamp.date(), datetime.strptime('08:00', '%H:%M').time())
         processing_minutes = int((file_timestamp - start_of_day).total_seconds() / 60)
         
-        # Get the date (yesterday, since we're processing yesterday's payments today)
-        data_date = file_timestamp.date() - timedelta(days=1)
+        # Data date comes from the parent function's target_date - 1 day
+        # (Will be set by caller)
         
         record = {
             'date': data_date,
@@ -93,11 +108,11 @@ def process_output_file(filepath):
             'processing_minutes': processing_minutes
         }
         
-        print(f"  ✓ {company_code}_{housebank}_{currency}: {total_payments} payments, {automated_count} automated ({(automated_count/total_payments*100):.1f}%)")
+        print(f"  OK: {company_code}_{housebank}_{currency}: {total_payments} payments, {automated_count} automated ({(automated_count/total_payments*100):.1f}%)")
         return record
         
     except Exception as e:
-        print(f"  ✗ Error processing {os.path.basename(filepath)}: {str(e)}")
+        print(f"  ERROR: Error processing {os.path.basename(filepath)}: {str(e)}")
         return None
 
 def consolidate_today_data(target_date=None):
@@ -119,12 +134,12 @@ def consolidate_today_data(target_date=None):
     output_folder = os.path.join(PACO_OUTPUT_PATH, month_str, target_str)
     
     if not os.path.exists(output_folder):
-        print(f"❌ ERROR: Output folder does not exist:")
+        print(f"ERROR: Output folder does not exist:")
         print(f"   {output_folder}")
         print(f"\nPlease ensure the automation has completed for {target_date.strftime('%Y-%m-%d')}.")
         return False
     
-    print(f"📁 Reading from: {output_folder}\n")
+    print(f"Reading from: {output_folder}\n")
     
     # Process all Excel files
     new_records = []
@@ -132,19 +147,22 @@ def consolidate_today_data(target_date=None):
                    if f.endswith('.xlsx') and not f.startswith('~$')]
     
     if not excel_files:
-        print(f"❌ No Excel files found in the output folder.")
+        print(f"ERROR: No Excel files found in the output folder.")
         return False
     
     print(f"Found {len(excel_files)} files to process:\n")
     
+    # Calculate data date (yesterday's payments processed today)
+    data_date = target_date - timedelta(days=1)
+    
     for filename in excel_files:
         filepath = os.path.join(output_folder, filename)
-        record = process_output_file(filepath)
+        record = process_output_file(filepath, data_date)
         if record:
             new_records.append(record)
     
     if not new_records:
-        print(f"\n❌ No records were successfully processed.")
+        print(f"\nERROR: No records were successfully processed.")
         return False
     
     print(f"\n{'='*60}")
@@ -152,7 +170,7 @@ def consolidate_today_data(target_date=None):
     print(f"{'='*60}\n")
     
     # Load existing database
-    print(f"📊 Loading consolidated database: {CONSOLIDATED_DB_PATH}")
+    print(f"Loading consolidated database: {CONSOLIDATED_DB_PATH}")
     
     if os.path.exists(CONSOLIDATED_DB_PATH):
         existing_df = pd.read_excel(CONSOLIDATED_DB_PATH, engine='openpyxl')
@@ -160,13 +178,13 @@ def consolidate_today_data(target_date=None):
         print(f"   Current records: {len(existing_df)}")
         
         # Remove existing records for this date (to replace them)
-        data_date = target_date - timedelta(days=1)  # Data is for yesterday
+        # data_date was already calculated above
         records_before = len(existing_df)
         existing_df = existing_df[existing_df['date'] != data_date]
         records_removed = records_before - len(existing_df)
         
         if records_removed > 0:
-            print(f"   ⚠️  Removed {records_removed} existing records for {data_date.strftime('%Y-%m-%d')} (will be replaced)")
+            print(f"   WARNING: Removed {records_removed} existing records for {data_date.strftime('%Y-%m-%d')} (will be replaced)")
     else:
         print(f"   Creating new database file")
         existing_df = pd.DataFrame()
@@ -178,11 +196,11 @@ def consolidate_today_data(target_date=None):
     combined_df = combined_df.sort_values(['date', 'company_code', 'housebank', 'currency'])
     
     # Save to Excel
-    print(f"\n💾 Saving to database...")
+    print(f"\nSaving to database...")
     combined_df.to_excel(CONSOLIDATED_DB_PATH, index=False, engine='openpyxl')
     
     print(f"\n{'='*60}")
-    print(f"✅ CONSOLIDATION COMPLETE")
+    print(f"SUCCESS: CONSOLIDATION COMPLETE")
     print(f"{'='*60}")
     print(f"   Records added: {len(new_records)}")
     print(f"   Records removed: {records_removed}")
