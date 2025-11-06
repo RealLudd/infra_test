@@ -922,16 +922,20 @@ function setupCustomerExceptionsNav() {
                 document.querySelector('.navbar h2').innerHTML = '<i class="fas fa-chart-line"></i> Dashboard Overview';
             } else if (navType === 'transactions') {
                 e.preventDefault();
-                console.log('Navigating to Transactions');
+                console.log('Navigating to Transactions - START');
 
                 // Update active state
                 navLinks.forEach(l => l.classList.remove('active'));
                 link.classList.add('active');
+                console.log('Active state updated');
 
                 // Hide customer exceptions modal if open
                 const modal = document.getElementById('exceptionModal');
+                console.log('Modal element:', modal);
                 if (modal) {
+                    const displayBefore = modal.style.display;
                     modal.style.display = 'none';
+                    console.log(`Modal display changed from "${displayBefore}" to "${modal.style.display}"`);
                 }
 
                 // Show dashboard sections, hide customer exceptions
@@ -940,25 +944,36 @@ function setupCustomerExceptionsNav() {
                         el.style.display = 'block';
                     }
                 });
+                console.log('Dashboard sections shown');
 
-                document.getElementById('customer-exceptions').style.display = 'none';
+                const exceptionsSection = document.getElementById('customer-exceptions');
+                if (exceptionsSection) {
+                    exceptionsSection.style.display = 'none';
+                    console.log('Customer exceptions section hidden');
+                }
 
                 // Update navbar title
                 document.querySelector('.navbar h2').innerHTML = '<i class="fas fa-exchange-alt"></i> Transactions';
+                console.log('Navbar title updated');
 
                 // Scroll to transactions section
                 const transactionsSection = document.getElementById('transactions');
+                console.log('Transactions section element:', transactionsSection);
                 if (transactionsSection) {
+                    console.log('Starting scroll to transactions...');
                     transactionsSection.scrollIntoView({
                         behavior: 'smooth',
                         block: 'start'
                     });
+                    console.log('Scroll initiated');
                 }
 
                 // Close sidebar on mobile
                 if (window.innerWidth <= 991) {
                     document.querySelector('.sidebar').classList.remove('active');
                 }
+                
+                console.log('Navigating to Transactions - END');
             }
         });
     });
@@ -1071,6 +1086,8 @@ function renderExceptionsTable(exceptions) {
 
 // Open modal for adding exception
 function openAddExceptionModal() {
+    console.log('⚠️ openAddExceptionModal() called!');
+    console.trace('Stack trace to see who called this:');
     document.getElementById('exceptionModalTitle').innerHTML = '<i class="fas fa-user-shield"></i> Add Customer Exception';
     document.getElementById('exceptionId').value = '';
     document.getElementById('modalCompanyCode').value = '';
@@ -1081,6 +1098,7 @@ function openAddExceptionModal() {
     document.getElementById('modalPartnerRef').value = '';
     document.getElementById('modalExceptionType').value = '';
     document.getElementById('exceptionModal').style.display = 'flex';
+    console.log('Modal opened');
 }
 
 // Edit exception
@@ -1205,13 +1223,27 @@ function closeExceptionModal() {
     document.getElementById('exceptionModal').style.display = 'none';
 }
 
+// Flag to prevent duplicate listener initialization
+let listenersInitialized = false;
+
 // Setup customer exceptions event listeners
 function setupCustomerExceptionsListeners() {
+    if (listenersInitialized) {
+        console.log('⚠️ Listeners already initialized, skipping...');
+        return;
+    }
+    listenersInitialized = true;
+    
     try {
+        console.log('Setting up Customer Exceptions event listeners...');
         // Add exception button
         const addBtn = document.getElementById('addExceptionBtn');
+        console.log('Add Exception Button:', addBtn);
         if (addBtn) {
             addBtn.addEventListener('click', openAddExceptionModal);
+            console.log('✓ Event listener attached to Add Exception button');
+        } else {
+            console.log('⚠️ Add Exception button not found');
         }
 
         // Apply filters button
