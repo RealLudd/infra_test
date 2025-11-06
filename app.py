@@ -108,7 +108,7 @@ def process_live_excel_file(filepath):
         
         value_assigned = 0
         if 'Match' in df.columns and 'Amount' in df.columns:
-            value_assigned = df[df['Match'] == 'YES']['Amount'].sum()
+            value_assigned = df[df['Match'].str.upper() == 'YES']['Amount'].sum()
         
         # Convert amounts to EUR
         total_received_eur = convert_to_eur(total_received, currency)
@@ -560,6 +560,10 @@ def get_company_status():
             'automated_count': record['automated_count'],
             'assigned_to_account': record.get('assigned_to_account', 0),
             'invoices_assigned': record.get('invoices_assigned', 0),
+            'total_received': record.get('total_received', 0),
+            'total_received_eur': record.get('total_received_eur', 0),
+            'value_assigned': record.get('value_assigned', 0),
+            'value_assigned_eur': record.get('value_assigned_eur', 0),
             'file_timestamp': record['file_timestamp'],
             'is_live': True,
             'is_raw': is_raw
@@ -576,6 +580,10 @@ def get_company_status():
         automated_count = data['automated_count']
         assigned_to_account = data.get('assigned_to_account', 0)
         invoices_assigned = data.get('invoices_assigned', 0)
+        total_received = data.get('total_received', 0)
+        total_received_eur = data.get('total_received_eur', 0)
+        value_assigned = data.get('value_assigned', 0)
+        value_assigned_eur = data.get('value_assigned_eur', 0)
         is_live = data.get('is_live', False)
         is_raw = data.get('is_raw', False)
         
@@ -584,18 +592,21 @@ def get_company_status():
             # Historical data - show as "Awaiting Today"
             status = 'Awaiting Today'
             percentage = 0
+            value_percentage = 0
             start_time = None
             end_time = None
         elif is_raw:
             # Raw data (not processed yet) - show as "Not Started"
             status = 'Not Started'
             percentage = 0
+            value_percentage = 0
             start_time = datetime.combine(date.today(), datetime.strptime('08:00', '%H:%M').time())
             end_time = None
         else:
             # Processed data exists - show as "Done"
             status = 'Done'
             percentage = (automated_count / total_payments * 100) if total_payments > 0 else 0
+            value_percentage = (value_assigned / total_received * 100) if total_received > 0 else 0
             
             # Get start and end times
             file_timestamp = data['file_timestamp']
@@ -613,6 +624,11 @@ def get_company_status():
             'customers_assigned': assigned_to_account if is_live and not is_raw else 0,
             'invoices_assigned': invoices_assigned if is_live and not is_raw else 0,
             'total': total_payments,
+            'total_received': round(total_received, 2) if is_live and not is_raw else 0,
+            'total_received_eur': round(total_received_eur, 2) if is_live and not is_raw else 0,
+            'value_assigned': round(value_assigned, 2) if is_live and not is_raw else 0,
+            'value_assigned_eur': round(value_assigned_eur, 2) if is_live and not is_raw else 0,
+            'value_assigned_percentage': round(value_percentage, 1),
             'start_time': start_time.isoformat() if start_time else None,
             'end_time': end_time.isoformat() if end_time else None,
             'is_live': is_live

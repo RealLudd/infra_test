@@ -586,6 +586,7 @@ async function loadCompanyStatus() {
             const formatTime = (date) => date ? date.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'}) : '--:--';
 
             const matchedPercentage = company.matched_percentage || 0;
+            const valuePercentage = company.value_assigned_percentage || 0;
             
             card.innerHTML = `
                 <div class="company-status-header">
@@ -607,6 +608,15 @@ async function loadCompanyStatus() {
                     </div>
                     <div class="progress-bar-container">
                         <div class="progress-bar" style="width: ${matchedPercentage}%"></div>
+                    </div>
+                </div>
+                <div class="company-progress" style="margin-top: 8px;">
+                    <div class="progress-info">
+                        <span>Value Assigned</span>
+                        <span><strong>${valuePercentage}%</strong></span>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" style="width: ${valuePercentage}%; background: linear-gradient(90deg, #fd5d93 0%, #ec250d 100%);"></div>
                     </div>
                 </div>
                 <div class="company-time-info">
