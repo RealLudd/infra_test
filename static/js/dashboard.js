@@ -22,6 +22,11 @@ function formatCurrency(amount) {
     }).format(amount);
 }
 
+// Format number with thousand separators (e.g., 6,563)
+function formatNumber(number) {
+    return new Intl.NumberFormat('en-US').format(number);
+}
+
 // Load overview data from API
 async function loadOverview() {
     try {
@@ -38,22 +43,22 @@ async function loadOverview() {
         updateStatValue('totalReceived', formatCurrency(data.total_received));
 
         // 2. Update Total Payments (Number)
-        updateStatValue('totalPayments', data.total_payments.toString());
+        updateStatValue('totalPayments', formatNumber(data.total_payments));
 
         // 3. Update Processed Automatically
         updateStatValue('automationPercentage', `${data.automation_percentage}%`);
         document.getElementById('automationDetail').innerHTML =
-            `<span>${data.automated_count} / ${data.total_payments} payments</span>`;
+            `<span>${formatNumber(data.automated_count)} / ${formatNumber(data.total_payments)} payments</span>`;
 
-        // 4. Update Payments Assigned to Customer Account
+        // 4. Update Payments Posted to Customer Accounts
         updateStatValue('assignedAccountPercentage', `${data.assigned_percentage}%`);
         document.getElementById('assignedAccountDetail').innerHTML =
-            `<span>${data.assigned_count} / ${data.total_payments} payments</span>`;
+            `<span>${formatNumber(data.assigned_count)} / ${formatNumber(data.total_payments)} payments</span>`;
 
-        // 5. Update Number of Invoices Assigned
-        updateStatValue('totalInvoices', data.total_invoices_assigned.toString());
+        // 5. Update Number of Invoices Cleared
+        updateStatValue('totalInvoices', formatNumber(data.total_invoices_assigned));
 
-        // 6. Update Total Value Assigned (%)
+        // 6. Update Invoices Amount Cleared (%)
         updateStatValue('valueAssignedPercentage', `${data.value_assigned_percentage}%`);
         document.getElementById('valueAssignedAmount').innerHTML =
             `<span>${formatCurrency(data.total_assigned_value)} of total</span>`;
@@ -174,7 +179,7 @@ function renderAutomationChart(data) {
                         footer: function(tooltipItems) {
                             const index = tooltipItems[0].dataIndex;
                             const count = data.payment_counts[index];
-                            return `Total Payments: ${count}`;
+                            return `Total Payments: ${formatNumber(count)}`;
                         }
                     }
                 }
