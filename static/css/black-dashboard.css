@@ -830,6 +830,12 @@ body {
     border: 1px solid var(--danger-color);
 }
 
+.status-badge.awaiting-today {
+    background: linear-gradient(135deg, rgba(154, 154, 154, 0.2), rgba(154, 154, 154, 0.1));
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+}
+
 .company-progress {
     margin-top: 15px;
 }

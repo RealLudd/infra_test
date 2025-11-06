@@ -404,42 +404,83 @@ def get_automation_trend():
 @app.route('/api/company-status')
 def get_company_status():
     """
-    Get real-time processing status for each bank account configuration.
-    Reads today's files directly from network path.
+    Get processing status for each bank account configuration.
+    Shows live data when available, otherwise shows most recent historical data.
+    Always displays all known bank account configurations.
     """
     automation_type = request.args.get('automation_type', 'PACO')
     
-    # Get live data from today
-    live_records = get_live_data(automation_type)
+    # Get all unique bank account configurations from historical data
+    df = load_historical_data()
+    bank_accounts = {}
     
+    if not df.empty:
+        # Get most recent data for each bank account from historical DB
+        for _, row in df.sort_values('date', ascending=False).iterrows():
+            key = (row['company_code'], row['housebank'], row['currency'])
+            if key not in bank_accounts:
+                bank_accounts[key] = {
+                    'company_code': str(row['company_code']),
+                    'housebank': str(row['housebank']),
+                    'currency': str(row['currency']),
+                    'total_payments': int(row['total_payments']),
+                    'automated_count': int(row['automated_count']),
+                    'date': row['date'],
+                    'is_live': False
+                }
+    
+    # Get live data from today and override historical data if available
+    live_records = get_live_data(automation_type)
+    for record in live_records:
+        key = (record['company_code'], record['housebank'], record['currency'])
+        bank_accounts[key] = {
+            'company_code': record['company_code'],
+            'housebank': record['housebank'],
+            'currency': record['currency'],
+            'total_payments': record['total_payments'],
+            'automated_count': record['automated_count'],
+            'file_timestamp': record['file_timestamp'],
+            'is_live': True
+        }
+    
+    # Build status list
     bank_account_status_list = []
     
-    for record in live_records:
-        company_code = record['company_code']
-        housebank = record['housebank']
-        currency = record['currency']
-        total_payments = record['total_payments']
-        automated_count = record['automated_count']
+    for (cc, hb, cur), data in bank_accounts.items():
+        company_code = data['company_code']
+        housebank = data['housebank']
+        currency = data['currency']
+        total_payments = data['total_payments']
+        automated_count = data['automated_count']
+        is_live = data.get('is_live', False)
         
         # Calculate status
         pending = total_payments - automated_count
         processed = automated_count
         
-        if pending == 0 and total_payments > 0:
-            status = 'Done'
-        elif processed > 0 and pending > 0:
-            status = 'In Process'
-        elif processed == 0:
-            status = 'Not Started'
+        if not is_live:
+            # Historical data - show as "Awaiting Today"
+            status = 'Awaiting Today'
+            percentage = 0
+            start_time = None
+            end_time = None
         else:
-            status = 'In Process'
-        
-        percentage = (processed / total_payments * 100) if total_payments > 0 else 0
-        
-        # Get start and end times
-        file_timestamp = record['file_timestamp']
-        start_time = datetime.combine(file_timestamp.date(), datetime.strptime('08:00', '%H:%M').time())
-        end_time = file_timestamp if status == 'Done' else None
+            # Live data - calculate real status
+            if pending == 0 and total_payments > 0:
+                status = 'Done'
+            elif processed > 0 and pending > 0:
+                status = 'In Process'
+            elif processed == 0:
+                status = 'Not Started'
+            else:
+                status = 'In Process'
+            
+            percentage = (processed / total_payments * 100) if total_payments > 0 else 0
+            
+            # Get start and end times
+            file_timestamp = data['file_timestamp']
+            start_time = datetime.combine(file_timestamp.date(), datetime.strptime('08:00', '%H:%M').time())
+            end_time = file_timestamp if status == 'Done' else None
         
         bank_account_status_list.append({
             'bank_account': f"{company_code}_{housebank}_{currency}",
@@ -447,13 +488,17 @@ def get_company_status():
             'housebank': housebank,
             'currency': currency,
             'status': status,
-            'processed': processed,
-            'pending': pending,
+            'processed': processed if is_live else 0,
+            'pending': pending if is_live else total_payments,
             'total': total_payments,
             'percentage': round(percentage, 1),
             'start_time': start_time.isoformat() if start_time else None,
-            'end_time': end_time.isoformat() if end_time else None
+            'end_time': end_time.isoformat() if end_time else None,
+            'is_live': is_live
         })
+    
+    # Sort by company code
+    bank_account_status_list.sort(key=lambda x: (x['company_code'], x['housebank'], x['currency']))
     
     return jsonify({
         'company_statuses': bank_account_status_list
