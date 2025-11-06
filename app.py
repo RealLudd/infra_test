@@ -1,329 +1,511 @@
 """
 CashWeb - Cash Management Web Application
-A simple Flask application for tracking cash flow and expenses with automation analytics
+A Flask application for tracking PACO/FRAN automation analytics with dual-source data:
+- Historical data from consolidated Excel database
+- Live data from network path for real-time status
 """
 from flask import Flask, render_template, jsonify, request
-from datetime import datetime, timedelta
-import json
-import random
+from datetime import datetime, timedelta, date
+import pandas as pd
+import os
+import re
+from currency_converter import convert_to_eur
 
 app = Flask(__name__)
 
-# Enhanced sample data with automation tracking
-# Bank account configurations represent unique combinations of company_code + housebank + currency
-# automation_system: PACO or FRAN (for automated transactions only)
-# customer_id: customer identifier for assignment tracking
-# invoices_assigned: number of invoices assigned from customer
-transactions = [
-    {"id": 1, "date": "2025-10-15", "description": "Remittance cleared for Customer 89732", "amount": 5000, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 2, "company_code": "0014", "housebank": "1450I", "currency": "GBP2", "customer_id": "89732", "invoices_assigned": 3, "assigned_to_account": True},
-    {"id": 2, "date": "2025-10-16", "description": "Remittance cleared for Customer 45891", "amount": 3200, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 1, "company_code": "0010", "housebank": "1050D", "currency": "EUR", "customer_id": "45891", "invoices_assigned": 2, "assigned_to_account": True},
-    {"id": 3, "date": "2025-10-18", "description": "Remittance cleared for Customer 12456", "amount": 1800, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 45, "company_code": "0018", "housebank": "1850I", "currency": "EUR", "customer_id": "12456", "invoices_assigned": 1, "assigned_to_account": True},
-    {"id": 4, "date": "2025-10-20", "description": "Remittance cleared for Customer 78234", "amount": 4500, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 3, "company_code": "0015", "housebank": "CIT01", "currency": "OP272", "customer_id": "78234", "invoices_assigned": 4, "assigned_to_account": True},
-    {"id": 5, "date": "2025-10-22", "description": "Remittance cleared for Customer 56789", "amount": 2700, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 62, "company_code": "0024", "housebank": "2439I", "currency": "NOK_2", "customer_id": "56789", "invoices_assigned": 2, "assigned_to_account": True},
-    {"id": 6, "date": "2025-10-25", "description": "Remittance cleared for Customer 90123", "amount": 6200, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 2, "company_code": "0040", "housebank": "SAN01", "currency": "OP464", "customer_id": "90123", "invoices_assigned": 5, "assigned_to_account": True},
-    {"id": 7, "date": "2025-10-28", "description": "Remittance cleared for Customer 34567", "amount": 3900, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 1, "company_code": "0033", "housebank": "3350I", "currency": "EUR", "customer_id": "34567", "invoices_assigned": 2, "assigned_to_account": True},
-    {"id": 8, "date": "2025-10-30", "description": "Remittance cleared for Customer 23890", "amount": 5500, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 38, "company_code": "0033", "housebank": "3350I", "currency": "USD", "customer_id": "23890", "invoices_assigned": 3, "assigned_to_account": True},
-    {"id": 9, "date": "2025-11-01", "description": "Remittance cleared for Customer 67812", "amount": 4800, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 2, "company_code": "0012", "housebank": "570BE", "currency": "EUR", "customer_id": "67812", "invoices_assigned": 3, "assigned_to_account": True},
-    {"id": 10, "date": "2025-11-02", "description": "Remittance cleared for Customer 98765", "amount": 7100, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 1, "company_code": "0026", "housebank": "2602D", "currency": "PLN", "customer_id": "98765", "invoices_assigned": 6, "assigned_to_account": True},
-    {"id": 11, "date": "2025-11-03", "description": "Remittance cleared for Customer 45678", "amount": 3300, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 52, "company_code": "0041", "housebank": "4150I", "currency": "EUR", "customer_id": "45678", "invoices_assigned": 2, "assigned_to_account": True},
-    {"id": 12, "date": "2025-11-04", "description": "Remittance cleared for Customer 12389", "amount": 5900, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 3, "company_code": "0040", "housebank": "4050I", "currency": "EUR", "customer_id": "12389", "invoices_assigned": 4, "assigned_to_account": True},
-    {"id": 13, "date": "2025-11-05", "description": "Remittance cleared for Customer 78901", "amount": 4200, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 2, "company_code": "0042", "housebank": "4234D", "currency": "EUR", "customer_id": "78901", "invoices_assigned": 3, "assigned_to_account": True},
-    {"id": 14, "date": "2025-11-05", "description": "Pending remittance for Customer 56123", "amount": 2800, "type": "income", "automated": None, "automation_system": None, "assigned_minutes": None, "company_code": "0044", "housebank": "4450I", "currency": "CZK", "customer_id": None, "invoices_assigned": 0, "assigned_to_account": False},
-    {"id": 15, "date": "2025-11-05", "description": "Pending remittance for Customer 89456", "amount": 3600, "type": "income", "automated": None, "automation_system": None, "assigned_minutes": None, "company_code": "0043", "housebank": "4350I", "currency": "EUR", "customer_id": None, "invoices_assigned": 0, "assigned_to_account": False},
-    {"id": 16, "date": "2025-11-01", "description": "Remittance cleared for Customer 23456", "amount": 5200, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 2, "company_code": "0041", "housebank": "4175I", "currency": "EUR", "customer_id": "23456", "invoices_assigned": 4, "assigned_to_account": True},
-    {"id": 17, "date": "2025-11-02", "description": "Remittance cleared for Customer 34789", "amount": 4100, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 1, "company_code": "0043", "housebank": "4335I", "currency": "EUR", "customer_id": "34789", "invoices_assigned": 3, "assigned_to_account": True},
-    {"id": 18, "date": "2025-11-03", "description": "Remittance cleared for Customer 91234", "amount": 6300, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 48, "company_code": "0019", "housebank": "1939I", "currency": "EUR", "customer_id": "91234", "invoices_assigned": 5, "assigned_to_account": True},
-    {"id": 19, "date": "2025-11-04", "description": "Remittance cleared for Customer 67890", "amount": 3800, "type": "income", "automated": True, "automation_system": "FRAN", "assigned_minutes": 2, "company_code": "0011", "housebank": "1101I", "currency": "CHF", "customer_id": "67890", "invoices_assigned": 2, "assigned_to_account": True},
-    {"id": 20, "date": "2025-11-04", "description": "Remittance cleared for Customer 45123", "amount": 4900, "type": "income", "automated": True, "automation_system": "PACO", "assigned_minutes": 1, "company_code": "0022", "housebank": "2239X", "currency": "SEK", "customer_id": "45123", "invoices_assigned": 3, "assigned_to_account": True},
-    {"id": 21, "date": "2025-11-05", "description": "Remittance cleared for Customer 78456", "amount": 5100, "type": "income", "automated": False, "automation_system": None, "assigned_minutes": 55, "company_code": "0011", "housebank": "1101D", "currency": "CHF", "customer_id": "78456", "invoices_assigned": 4, "assigned_to_account": True},
-]
+# Configuration
+CONSOLIDATED_DB_PATH = "data/paco_consolidated.xlsx"
+PACO_NETWORK_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\03_Output\2025"
+FRAN_NETWORK_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\03_Output\2025"  # Update when FRAN path is available
+
+# Global cache for historical data
+historical_data_cache = None
+historical_data_timestamp = None
+
+def load_historical_data(force_reload=False):
+    """
+    Load historical data from consolidated Excel database.
+    Caches the data to avoid repeated file reads.
+    """
+    global historical_data_cache, historical_data_timestamp
+    
+    # Check if cache is valid (less than 5 minutes old)
+    if not force_reload and historical_data_cache is not None:
+        if historical_data_timestamp and (datetime.now() - historical_data_timestamp).seconds < 300:
+            return historical_data_cache
+    
+    # Load data from Excel
+    if os.path.exists(CONSOLIDATED_DB_PATH):
+        try:
+            df = pd.read_excel(CONSOLIDATED_DB_PATH, engine='openpyxl')
+            df['date'] = pd.to_datetime(df['date']).dt.date
+            historical_data_cache = df
+            historical_data_timestamp = datetime.now()
+            return df
+        except Exception as e:
+            print(f"Error loading historical data: {str(e)}")
+            return pd.DataFrame()
+    else:
+        print(f"Historical database not found: {CONSOLIDATED_DB_PATH}")
+        return pd.DataFrame()
+
+def parse_filename(filename):
+    """
+    Parse filename to extract company_code, housebank, and currency.
+    Expected format: CCCC_HHHH_CUR.xlsx (e.g., 0010_1050D_EUR.xlsx)
+    """
+    name = filename.replace('.xlsx', '')
+    parts = name.split('_')
+    
+    if len(parts) >= 3:
+        company_code = parts[0]
+        housebank = parts[1]
+        currency = '_'.join(parts[2:])
+        return company_code, housebank, currency
+    
+    return None, None, None
+
+def count_invoices(docnumbers_str):
+    """Count invoices from DocNumbers column (separated by ;)"""
+    if pd.isna(docnumbers_str) or docnumbers_str == '':
+        return 0
+    invoices = [inv.strip() for inv in str(docnumbers_str).split(';') if inv.strip()]
+    return len(invoices)
+
+def process_live_excel_file(filepath):
+    """
+    Process a single Excel file and extract metrics for live data.
+    Returns aggregated metrics and transaction details.
+    """
+    try:
+        df = pd.read_excel(filepath, engine='openpyxl')
+        df.columns = df.columns.str.strip()
+        
+        filename = os.path.basename(filepath)
+        company_code, housebank, currency = parse_filename(filename)
+        
+        if not all([company_code, housebank, currency]):
+            return None
+        
+        # Calculate metrics
+        total_payments = len(df)
+        total_received = df['Amount'].sum() if 'Amount' in df.columns else 0
+        automated_count = len(df[df['Match'] == 'YES']) if 'Match' in df.columns else 0
+        assigned_to_account = len(df[df['Business_Partner'].notna()]) if 'Business_Partner' in df.columns else 0
+        
+        invoices_assigned = 0
+        if 'Docnumbers' in df.columns:
+            invoices_assigned = df['Docnumbers'].apply(count_invoices).sum()
+        
+        value_assigned = 0
+        if 'Match' in df.columns and 'Amount' in df.columns:
+            value_assigned = df[df['Match'] == 'YES']['Amount'].sum()
+        
+        # Convert amounts to EUR
+        total_received_eur = convert_to_eur(total_received, currency)
+        value_assigned_eur = convert_to_eur(value_assigned, currency)
+        
+        # Get file timestamp
+        file_timestamp = datetime.fromtimestamp(os.path.getmtime(filepath))
+        start_of_day = datetime.combine(file_timestamp.date(), datetime.strptime('08:00', '%H:%M').time())
+        processing_minutes = int((file_timestamp - start_of_day).total_seconds() / 60)
+        
+        # Extract recent transactions (last 5 for each file)
+        transactions = []
+        for idx, row in df.tail(5).iterrows():
+            transactions.append({
+                'payment_number': str(row.get('Payment_Number', '')),
+                'business_partner': str(row.get('Business_Partner', '')),
+                'amount': float(row.get('Amount', 0)),
+                'match': str(row.get('Match', '')),
+                'docnumbers': str(row.get('Docnumbers', '')),
+                'payment_date': str(row.get('Payment Date', '')),
+                'company_code': company_code,
+                'housebank': housebank,
+                'currency': currency
+            })
+        
+        return {
+            'company_code': company_code,
+            'housebank': housebank,
+            'currency': currency,
+            'total_received': float(total_received),
+            'total_received_eur': float(total_received_eur),
+            'total_payments': int(total_payments),
+            'automated_count': int(automated_count),
+            'assigned_to_account': int(assigned_to_account),
+            'invoices_assigned': int(invoices_assigned),
+            'value_assigned': float(value_assigned),
+            'value_assigned_eur': float(value_assigned_eur),
+            'file_timestamp': file_timestamp,
+            'processing_minutes': processing_minutes,
+            'transactions': transactions
+        }
+        
+    except Exception as e:
+        print(f"Error processing live file {filepath}: {str(e)}")
+        return None
+
+def get_live_data(automation_type='PACO'):
+    """
+    Read today's files from network path for real-time data.
+    Since bank payments from yesterday are received today, we read yesterday's data.
+    Returns list of processed bank account records.
+    """
+    network_path = PACO_NETWORK_PATH if automation_type == 'PACO' else FRAN_NETWORK_PATH
+    
+    # Get yesterday's date (bank payments from yesterday are processed today)
+    yesterday = date.today() - timedelta(days=1)
+    yesterday_str = yesterday.strftime('%Y%m%d')
+    month_str = yesterday.strftime('%Y%m')
+    
+    # Build path to yesterday's folder (today's live data)
+    today_path = os.path.join(network_path, month_str, yesterday_str)
+    
+    records = []
+    
+    if not os.path.exists(today_path):
+        print(f"Today's data path does not exist: {today_path}")
+        return records
+    
+    # Process all Excel files in today's folder
+    for filename in os.listdir(today_path):
+        if filename.endswith('.xlsx') and not filename.startswith('~$'):
+            filepath = os.path.join(today_path, filename)
+            record = process_live_excel_file(filepath)
+            if record:
+                records.append(record)
+    
+    return records
 
 @app.route('/')
 def index():
     """Main dashboard page"""
     return render_template('index.html')
 
-@app.route('/api/summary')
-def get_summary():
-    """Get cash flow summary"""
-    total_income = sum(t['amount'] for t in transactions if t['type'] == 'income')
-    total_expenses = abs(sum(t['amount'] for t in transactions if t['type'] == 'expense'))
-    net_cash = total_income - total_expenses
-    
-    return jsonify({
-        'total_income': total_income,
-        'total_expenses': total_expenses,
-        'net_cash': net_cash,
-        'transaction_count': len(transactions)
-    })
-
-@app.route('/api/transactions')
-def get_transactions():
-    """Get all transactions"""
-    return jsonify(transactions)
-
-@app.route('/api/transactions', methods=['POST'])
-def add_transaction():
-    """Add a new transaction"""
-    data = request.get_json()
-    new_transaction = {
-        'id': len(transactions) + 1,
-        'date': data.get('date', datetime.now().strftime('%Y-%m-%d')),
-        'description': data.get('description', ''),
-        'amount': float(data.get('amount', 0)),
-        'type': data.get('type', 'expense')
-    }
-    transactions.append(new_transaction)
-    return jsonify(new_transaction), 201
-
-@app.route('/api/filter-options')
-def get_filter_options():
-    """Get unique bank account configurations (company_code + housebank + currency combinations)"""
-    # Get unique combinations of company_code, housebank, and currency
-    bank_accounts = set()
-    for t in transactions:
-        if t.get('company_code') and t.get('housebank') and t.get('currency'):
-            # Create a tuple representing the bank account configuration
-            bank_account = (t['company_code'], t['housebank'], t['currency'])
-            bank_accounts.add(bank_account)
-
-    # Sort and format bank accounts for display
-    bank_accounts_list = [
-        {
-            'value': f"{cc}|{hb}|{cur}",  # Use pipe separator for the filter value
-            'label': f"{cc} - {hb} - {cur}"  # Human-readable label
-        }
-        for cc, hb, cur in sorted(bank_accounts)
-    ]
-
-    return jsonify({
-        'bank_accounts': bank_accounts_list
-    })
-
-@app.route('/api/company-status')
-def get_company_status():
-    """Get processing status for each unique bank account configuration (company_code + housebank + currency)"""
-    # Get unique bank account configurations
-    bank_accounts = set()
-    for t in transactions:
-        if t.get('company_code') and t.get('housebank') and t.get('currency'):
-            bank_account = (t['company_code'], t['housebank'], t['currency'])
-            bank_accounts.add(bank_account)
-
-    bank_account_status_list = []
-    for cc, hb, cur in sorted(bank_accounts):
-        # Get all transactions for this bank account configuration
-        ba_transactions = [
-            t for t in transactions 
-            if t.get('company_code') == cc 
-            and t.get('housebank') == hb 
-            and t.get('currency') == cur
-        ]
-
-        # Count processed (automated or manual), pending (None), total
-        processed = [t for t in ba_transactions if t.get('automated') is not None]
-        pending = [t for t in ba_transactions if t.get('automated') is None]
-        total = len(ba_transactions)
-
-        # Determine status
-        if len(pending) == 0 and total > 0:
-            status = 'Done'
-        elif len(processed) > 0 and len(pending) > 0:
-            status = 'In Process'
-        elif len(processed) == 0:
-            status = 'Not Started'
-        else:
-            status = 'In Process'
-
-        bank_account_status_list.append({
-            'bank_account': f"{cc}_{hb}_{cur}",
-            'company_code': cc,
-            'housebank': hb,
-            'currency': cur,
-            'status': status,
-            'processed': len(processed),
-            'pending': len(pending),
-            'total': total,
-            'percentage': round((len(processed) / total * 100), 1) if total > 0 else 0
-        })
-
-    return jsonify({
-        'company_statuses': bank_account_status_list
-    })
-
 @app.route('/api/overview')
 def get_overview():
-    """Get dashboard overview with automation metrics"""
-    period = request.args.get('period', 'today')  # today, week, month, quarter
-    bank_account = request.args.get('bank_account', '')  # Combined filter: "company_code|housebank|currency"
-
-    # Parse bank account filter if provided
+    """
+    Get dashboard overview with automation metrics.
+    Combines historical data (from consolidated DB) with today's live data.
+    """
+    period = request.args.get('period', 'today')
+    bank_account = request.args.get('bank_account', '')
+    automation_type = request.args.get('automation_type', 'PACO')
+    
+    # Parse bank account filter
     company_code, housebank, currency = '', '', ''
     if bank_account:
         parts = bank_account.split('|')
         if len(parts) == 3:
             company_code, housebank, currency = parts
-
+    
     # Calculate date range
-    today = datetime.now().date()
+    # Note: "Today" means yesterday's bank payments (received today)
+    today = date.today()
+    yesterday = today - timedelta(days=1)
+    
     if period == 'today':
-        start_date = today
+        # Today = yesterday's data only (from live files)
+        start_date = yesterday
+        end_date = yesterday - timedelta(days=1)  # No historical data for "today"
     elif period == 'week':
-        start_date = today - timedelta(days=7)
+        start_date = yesterday - timedelta(days=7)
+        end_date = yesterday - timedelta(days=2)  # Exclude yesterday (it's live)
     elif period == 'month':
-        start_date = today - timedelta(days=30)
+        start_date = yesterday - timedelta(days=30)
+        end_date = yesterday - timedelta(days=2)
     elif period == 'quarter':
-        start_date = today - timedelta(days=90)
+        start_date = yesterday - timedelta(days=90)
+        end_date = yesterday - timedelta(days=2)
     else:
-        start_date = today
-
-    # Filter transactions by date range, type, and bank account configuration
-    filtered = [
-        t for t in transactions
-        if datetime.strptime(t['date'], '%Y-%m-%d').date() >= start_date
-        and t['type'] == 'income'
-        and (not bank_account or (
-            t.get('company_code', '') == company_code
-            and t.get('housebank', '') == housebank
-            and t.get('currency', '') == currency
-        ))
-    ]
-
-    # Calculate metrics
-    total_payments = len(filtered)
-    total_received = sum(t['amount'] for t in filtered)
-
-    # Automation metrics
-    automated = [t for t in filtered if t.get('automated') == True]
-    manual = [t for t in filtered if t.get('automated') == False]
-    unassigned = [t for t in filtered if t.get('automated') is None]
-
-    automation_percentage = (len(automated) / total_payments * 100) if total_payments > 0 else 0
-
-    # Calculate average assignment time
-    auto_times = [t['assigned_minutes'] for t in automated if t.get('assigned_minutes')]
-    manual_times = [t['assigned_minutes'] for t in manual if t.get('assigned_minutes')]
-
-    avg_auto_time = sum(auto_times) / len(auto_times) if auto_times else 0
-    avg_manual_time = sum(manual_times) / len(manual_times) if manual_times else 0
-
-    # Customer account assignment metrics
-    assigned_to_account = [t for t in filtered if t.get('assigned_to_account') == True]
-    assigned_percentage = (len(assigned_to_account) / total_payments * 100) if total_payments > 0 else 0
-
-    # Invoice assignment metrics
-    total_invoices_assigned = sum(t.get('invoices_assigned', 0) for t in filtered)
-
-    # Value assignment metrics
-    total_assigned_value = sum(t['amount'] for t in assigned_to_account)
+        start_date = yesterday
+        end_date = yesterday - timedelta(days=1)
+    
+    # Initialize totals
+    total_payments = 0
+    total_received = 0
+    automated_count = 0
+    assigned_to_account = 0
+    total_invoices_assigned = 0
+    total_assigned_value = 0
+    
+    # Load historical data (if not today-only)
+    if period != 'today':
+        df = load_historical_data()
+        if not df.empty:
+            # Filter by date range and bank account
+            mask = (df['date'] >= start_date) & (df['date'] <= end_date)
+            if bank_account:
+                mask &= (df['company_code'] == company_code) & \
+                        (df['housebank'] == housebank) & \
+                        (df['currency'] == currency)
+            
+            filtered_df = df[mask]
+            
+            # Aggregate metrics (use EUR-converted amounts for totals)
+            total_payments += filtered_df['total_payments'].sum()
+            total_received += filtered_df['total_received_eur'].sum()  # EUR amounts
+            automated_count += filtered_df['automated_count'].sum()
+            assigned_to_account += filtered_df['assigned_to_account'].sum()
+            total_invoices_assigned += filtered_df['invoices_assigned'].sum()
+            total_assigned_value += filtered_df['value_assigned_eur'].sum()  # EUR amounts
+    
+    # Add today's live data and collect processing times
+    live_records = get_live_data(automation_type)
+    processing_times = []
+    
+    for record in live_records:
+        # Filter by bank account if specified
+        if bank_account:
+            if not (record['company_code'] == company_code and 
+                    record['housebank'] == housebank and 
+                    record['currency'] == currency):
+                continue
+        
+        total_payments += record['total_payments']
+        total_received += record['total_received_eur']  # EUR amounts
+        automated_count += record['automated_count']
+        assigned_to_account += record['assigned_to_account']
+        total_invoices_assigned += record['invoices_assigned']
+        total_assigned_value += record['value_assigned_eur']  # EUR amounts
+        
+        # Collect processing time for average calculation
+        if 'processing_minutes' in record:
+            processing_times.append(record['processing_minutes'])
+    
+    # Calculate percentages
+    automation_percentage = (automated_count / total_payments * 100) if total_payments > 0 else 0
+    assigned_percentage = (assigned_to_account / total_payments * 100) if total_payments > 0 else 0
     value_assigned_percentage = (total_assigned_value / total_received * 100) if total_received > 0 else 0
-    unassigned_value = sum(t['amount'] for t in unassigned)
-
+    
+    manual_count = total_payments - automated_count
+    unassigned_count = total_payments - assigned_to_account
+    unassigned_value = total_received - total_assigned_value
+    
+    # Calculate average processing time from live data (8:00 AM to file generation)
+    # This represents the actual automation processing time
+    avg_auto_time_minutes = sum(processing_times) / len(processing_times) if processing_times else 0.0
+    avg_manual_time_minutes = 45.0  # Manual processing estimate
+    
     return jsonify({
         'period': period,
-        'total_payments': total_payments,
-        'total_received': total_received,
+        'total_payments': int(total_payments),
+        'total_received': float(total_received),
         'automation_percentage': round(automation_percentage, 1),
-        'automated_count': len(automated),
-        'manual_count': len(manual),
-        'unassigned_count': len(unassigned),
-        'unassigned_value': unassigned_value,
+        'automated_count': int(automated_count),
+        'manual_count': int(manual_count),
+        'unassigned_count': int(unassigned_count),
+        'unassigned_value': float(unassigned_value),
         'assigned_percentage': round(assigned_percentage, 1),
-        'assigned_count': len(assigned_to_account),
-        'total_invoices_assigned': total_invoices_assigned,
-        'total_assigned_value': total_assigned_value,
+        'assigned_count': int(assigned_to_account),
+        'total_invoices_assigned': int(total_invoices_assigned),
+        'total_assigned_value': float(total_assigned_value),
         'value_assigned_percentage': round(value_assigned_percentage, 1),
-        'avg_auto_time_minutes': round(avg_auto_time, 1),
-        'avg_manual_time_minutes': round(avg_manual_time, 1),
+        'avg_auto_time_minutes': avg_auto_time_minutes,
+        'avg_manual_time_minutes': avg_manual_time_minutes,
     })
 
 @app.route('/api/automation-trend')
 def get_automation_trend():
-    """Get automation trend data for charts"""
-    period = request.args.get('period', 'week')  # week, month, quarter
-    bank_account = request.args.get('bank_account', '')  # Combined filter: "company_code|housebank|currency"
-
-    # Parse bank account filter if provided
+    """
+    Get automation trend data for charts (historical data only).
+    """
+    period = request.args.get('period', 'week')
+    bank_account = request.args.get('bank_account', '')
+    automation_type = request.args.get('automation_type', 'PACO')
+    
+    # Parse bank account filter
     company_code, housebank, currency = '', '', ''
     if bank_account:
         parts = bank_account.split('|')
         if len(parts) == 3:
             company_code, housebank, currency = parts
-
+    
     # Calculate date range
-    today = datetime.now().date()
+    # Note: Latest data is from yesterday (today's live data)
+    yesterday = date.today() - timedelta(days=1)
+    
     if period == 'week':
         days = 7
-        start_date = today - timedelta(days=days)
     elif period == 'month':
         days = 30
-        start_date = today - timedelta(days=days)
     elif period == 'quarter':
         days = 90
-        start_date = today - timedelta(days=days)
     else:
         days = 7
-        start_date = today - timedelta(days=days)
-
-    # Group transactions by date - track PACO and FRAN separately
-    date_groups = {}
-    current_date = start_date
-    while current_date <= today:
-        date_str = current_date.strftime('%Y-%m-%d')
-        date_groups[date_str] = {'paco': 0, 'fran': 0, 'manual': 0, 'total': 0}
-        current_date += timedelta(days=1)
-
-    # Count transactions per day with filtering
-    for t in transactions:
-        if (t['type'] == 'income' and t.get('automated') is not None
-            and (not bank_account or (
-                t.get('company_code', '') == company_code
-                and t.get('housebank', '') == housebank
-                and t.get('currency', '') == currency
-            ))):
-            t_date = t['date']
-            if t_date in date_groups:
-                date_groups[t_date]['total'] += 1
-                if t.get('automated'):
-                    automation_system = t.get('automation_system', '')
-                    if automation_system == 'PACO':
-                        date_groups[t_date]['paco'] += 1
-                    elif automation_system == 'FRAN':
-                        date_groups[t_date]['fran'] += 1
-                else:
-                    date_groups[t_date]['manual'] += 1
-
-    # Calculate automation percentages per day for PACO and FRAN
+    
+    start_date = yesterday - timedelta(days=days)
+    today = yesterday  # For chart purposes, "today" is yesterday
+    
+    # Load historical data
+    df = load_historical_data()
+    
     labels = []
     paco_percentages = []
     fran_percentages = []
     payment_counts = []
-
-    for date_str in sorted(date_groups.keys()):
-        data = date_groups[date_str]
-        total = data['total']
-        paco_pct = (data['paco'] / total * 100) if total > 0 else 0
-        fran_pct = (data['fran'] / total * 100) if total > 0 else 0
-
-        # Format label based on period
-        date_obj = datetime.strptime(date_str, '%Y-%m-%d')
+    
+    if df.empty:
+        # Return empty data structure
+        return jsonify({
+            'labels': labels,
+            'paco_percentages': paco_percentages,
+            'fran_percentages': fran_percentages,
+            'payment_counts': payment_counts
+        })
+    
+    # Filter by date range and bank account
+    mask = (df['date'] >= start_date) & (df['date'] <= today)
+    if bank_account:
+        mask &= (df['company_code'] == company_code) & \
+                (df['housebank'] == housebank) & \
+                (df['currency'] == currency)
+    
+    filtered_df = df[mask]
+    
+    # Group by date
+    daily_groups = filtered_df.groupby('date').agg({
+        'total_payments': 'sum',
+        'automated_count': 'sum'
+    }).reset_index()
+    
+    # Generate labels and data
+    for _, row in daily_groups.iterrows():
+        date_obj = row['date']
+        total = row['total_payments']
+        automated = row['automated_count']
+        
+        # Format label
         if period == 'week':
             label = date_obj.strftime('%a %m/%d')
-        elif period == 'month':
-            label = date_obj.strftime('%m/%d')
         else:
             label = date_obj.strftime('%m/%d')
-
+        
+        # Calculate automation percentage (all PACO for now)
+        paco_pct = (automated / total * 100) if total > 0 else 0
+        
         labels.append(label)
         paco_percentages.append(round(paco_pct, 1))
-        fran_percentages.append(round(fran_pct, 1))
-        payment_counts.append(total)
-
+        fran_percentages.append(0)  # FRAN data not yet available
+        payment_counts.append(int(total))
+    
     return jsonify({
         'labels': labels,
         'paco_percentages': paco_percentages,
         'fran_percentages': fran_percentages,
         'payment_counts': payment_counts
+    })
+
+@app.route('/api/company-status')
+def get_company_status():
+    """
+    Get real-time processing status for each bank account configuration.
+    Reads today's files directly from network path.
+    """
+    automation_type = request.args.get('automation_type', 'PACO')
+    
+    # Get live data from today
+    live_records = get_live_data(automation_type)
+    
+    bank_account_status_list = []
+    
+    for record in live_records:
+        company_code = record['company_code']
+        housebank = record['housebank']
+        currency = record['currency']
+        total_payments = record['total_payments']
+        automated_count = record['automated_count']
+        
+        # Calculate status
+        pending = total_payments - automated_count
+        processed = automated_count
+        
+        if pending == 0 and total_payments > 0:
+            status = 'Done'
+        elif processed > 0 and pending > 0:
+            status = 'In Process'
+        elif processed == 0:
+            status = 'Not Started'
+        else:
+            status = 'In Process'
+        
+        percentage = (processed / total_payments * 100) if total_payments > 0 else 0
+        
+        # Get start and end times
+        file_timestamp = record['file_timestamp']
+        start_time = datetime.combine(file_timestamp.date(), datetime.strptime('08:00', '%H:%M').time())
+        end_time = file_timestamp if status == 'Done' else None
+        
+        bank_account_status_list.append({
+            'bank_account': f"{company_code}_{housebank}_{currency}",
+            'company_code': company_code,
+            'housebank': housebank,
+            'currency': currency,
+            'status': status,
+            'processed': processed,
+            'pending': pending,
+            'total': total_payments,
+            'percentage': round(percentage, 1),
+            'start_time': start_time.isoformat() if start_time else None,
+            'end_time': end_time.isoformat() if end_time else None
+        })
+    
+    return jsonify({
+        'company_statuses': bank_account_status_list
+    })
+
+@app.route('/api/recent-transactions')
+def get_recent_transactions():
+    """
+    Get recent transactions from today's live data.
+    """
+    automation_type = request.args.get('automation_type', 'PACO')
+    
+    # Get live data
+    live_records = get_live_data(automation_type)
+    
+    # Collect all transactions
+    all_transactions = []
+    for record in live_records:
+        all_transactions.extend(record['transactions'])
+    
+    # Sort by most recent and limit to 10
+    all_transactions = sorted(all_transactions, key=lambda x: x.get('payment_date', ''), reverse=True)[:10]
+    
+    return jsonify({
+        'transactions': all_transactions
+    })
+
+@app.route('/api/filter-options')
+def get_filter_options():
+    """Get unique bank account configurations for filters"""
+    bank_accounts = set()
+    
+    # Get from historical data
+    df = load_historical_data()
+    if not df.empty:
+        for _, row in df.iterrows():
+            bank_account = (row['company_code'], row['housebank'], row['currency'])
+            bank_accounts.add(bank_account)
+    
+    # Get from live data
+    live_records = get_live_data('PACO')
+    for record in live_records:
+        bank_account = (record['company_code'], record['housebank'], record['currency'])
+        bank_accounts.add(bank_account)
+    
+    # Format for display
+    bank_accounts_list = [
+        {
+            'value': f"{cc}|{hb}|{cur}",
+            'label': f"{cc} - {hb} - {cur}"
+        }
+        for cc, hb, cur in sorted(bank_accounts)
+    ]
+    
+    return jsonify({
+        'bank_accounts': bank_accounts_list
     })
 
 @app.route('/health')
@@ -332,9 +514,12 @@ def health():
     return jsonify({
         'status': 'healthy',
         'timestamp': datetime.now().isoformat(),
-        'service': 'CashWeb'
+        'service': 'CashWeb',
+        'data_sources': {
+            'historical_db': os.path.exists(CONSOLIDATED_DB_PATH),
+            'paco_network': os.path.exists(PACO_NETWORK_PATH)
+        }
     })
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-
