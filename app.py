@@ -229,6 +229,7 @@ def get_overview():
     assigned_to_account = 0
     total_invoices_assigned = 0
     total_assigned_value = 0
+    processing_times = []
     
     # Load historical data (if not today-only)
     if period != 'today':
@@ -250,10 +251,13 @@ def get_overview():
             assigned_to_account += filtered_df['assigned_to_account'].sum()
             total_invoices_assigned += filtered_df['invoices_assigned'].sum()
             total_assigned_value += filtered_df['value_assigned_eur'].sum()  # EUR amounts
+            
+            # Collect processing times from historical data
+            if 'processing_minutes' in filtered_df.columns:
+                processing_times.extend(filtered_df['processing_minutes'].dropna().tolist())
     
     # Add today's live data and collect processing times
     live_records = get_live_data(automation_type)
-    processing_times = []
     
     for record in live_records:
         # Filter by bank account if specified
