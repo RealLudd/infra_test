@@ -920,6 +920,20 @@ function setupCustomerExceptionsNav() {
 
                 // Update navbar title
                 document.querySelector('.navbar h2').innerHTML = '<i class="fas fa-chart-line"></i> Dashboard Overview';
+
+                // Scroll to top of dashboard to show stats
+                const contentArea = document.querySelector('.content');
+                if (contentArea) {
+                    contentArea.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+
+                // Close sidebar on mobile
+                if (window.innerWidth <= 991) {
+                    document.querySelector('.sidebar').classList.remove('active');
+                }
             } else if (navType === 'transactions') {
                 e.preventDefault();
                 console.log('Navigating to Transactions - START');
