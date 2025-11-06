@@ -357,17 +357,18 @@ def get_overview():
             # Filter by date range
             mask = (df['date'] >= start_date) & (df['date'] <= end_date)
             
-            # Apply bank account filter (most specific)
+            # Apply bank account filter (most specific - overrides everything)
             if bank_account:
                 mask &= (df['company_code'] == company_code) & \
                         (df['housebank'] == housebank) & \
                         (df['currency'] == currency)
-            # Apply region filter
-            elif region and region in REGION_MAP:
-                mask &= df['company_code'].isin(REGION_MAP[region])
-            # Apply company code filter
-            elif company_code_filter:
-                mask &= (df['company_code'] == company_code_filter)
+            else:
+                # Apply region filter (if set)
+                if region and region in REGION_MAP:
+                    mask &= df['company_code'].isin(REGION_MAP[region])
+                # Apply company code filter (can combine with region)
+                if company_code_filter:
+                    mask &= (df['company_code'] == company_code_filter)
             
             filtered_df = df[mask]
             
@@ -391,19 +392,20 @@ def get_overview():
         
         # Apply filters (most specific first)
         if bank_account:
-            # Filter by specific bank account
+            # Filter by specific bank account (overrides everything)
             if not (record_company_code == company_code and 
                     record['housebank'] == housebank and 
                     record['currency'] == currency):
                 continue
-        elif region and region in REGION_MAP:
-            # Filter by region
-            if record_company_code not in REGION_MAP[region]:
-                continue
-        elif company_code_filter:
-            # Filter by company code
-            if record_company_code != company_code_filter:
-                continue
+        else:
+            # Apply region filter (if set)
+            if region and region in REGION_MAP:
+                if record_company_code not in REGION_MAP[region]:
+                    continue
+            # Apply company code filter (can combine with region)
+            if company_code_filter:
+                if record_company_code != company_code_filter:
+                    continue
         
         total_payments += record['total_payments']
         total_received += record['total_received_eur']  # EUR amounts
@@ -520,17 +522,18 @@ def get_automation_trend():
     # Filter by date range
     mask = (df['date'] >= start_date) & (df['date'] <= end_date)
     
-    # Apply bank account filter (most specific)
+    # Apply bank account filter (most specific - overrides everything)
     if bank_account:
         mask &= (df['company_code'] == company_code) & \
                 (df['housebank'] == housebank) & \
                 (df['currency'] == currency)
-    # Apply region filter
-    elif region and region in REGION_MAP:
-        mask &= df['company_code'].isin(REGION_MAP[region])
-    # Apply company code filter
-    elif company_code_filter:
-        mask &= (df['company_code'] == company_code_filter)
+    else:
+        # Apply region filter (if set)
+        if region and region in REGION_MAP:
+            mask &= df['company_code'].isin(REGION_MAP[region])
+        # Apply company code filter (can combine with region)
+        if company_code_filter:
+            mask &= (df['company_code'] == company_code_filter)
     
     filtered_df = df[mask]
     
