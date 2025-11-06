@@ -853,13 +853,24 @@ window.addEventListener('resize', () => {
 // CUSTOMER EXCEPTIONS FUNCTIONALITY
 // ============================================
 
+// Flag to prevent duplicate initialization
+let navInitialized = false;
+
 // Navigation handling for Customer Exceptions tab
 function setupCustomerExceptionsNav() {
+    if (navInitialized) {
+        console.log('Navigation already initialized, skipping...');
+        return;
+    }
+    navInitialized = true;
+    
     const navLinks = document.querySelectorAll('.sidebar-menu a');
+    console.log(`Setting up navigation for ${navLinks.length} links`);
 
     navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
             const navType = link.getAttribute('data-nav');
+            console.log(`Navigation clicked: ${navType}`);
 
             if (navType === 'customer-exceptions') {
                 e.preventDefault();
@@ -886,10 +897,17 @@ function setupCustomerExceptionsNav() {
                 loadCustomerExceptions();
             } else if (navType === 'dashboard') {
                 e.preventDefault();
+                console.log('Navigating to Dashboard');
 
                 // Update active state
                 navLinks.forEach(l => l.classList.remove('active'));
                 link.classList.add('active');
+
+                // Hide customer exceptions modal if open
+                const modal = document.getElementById('exceptionModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
 
                 // Show dashboard sections, hide customer exceptions
                 document.querySelectorAll('.content > div:not(#customer-exceptions)').forEach(el => {
@@ -904,10 +922,17 @@ function setupCustomerExceptionsNav() {
                 document.querySelector('.navbar h2').innerHTML = '<i class="fas fa-chart-line"></i> Dashboard Overview';
             } else if (navType === 'transactions') {
                 e.preventDefault();
+                console.log('Navigating to Transactions');
 
                 // Update active state
                 navLinks.forEach(l => l.classList.remove('active'));
                 link.classList.add('active');
+
+                // Hide customer exceptions modal if open
+                const modal = document.getElementById('exceptionModal');
+                if (modal) {
+                    modal.style.display = 'none';
+                }
 
                 // Show dashboard sections, hide customer exceptions
                 document.querySelectorAll('.content > div:not(#customer-exceptions)').forEach(el => {
@@ -937,6 +962,8 @@ function setupCustomerExceptionsNav() {
             }
         });
     });
+    
+    console.log('Customer Exceptions navigation setup complete');
 }
 
 // Load filter options for Customer Exceptions
@@ -1180,36 +1207,63 @@ function closeExceptionModal() {
 
 // Setup customer exceptions event listeners
 function setupCustomerExceptionsListeners() {
-    // Add exception button
-    document.getElementById('addExceptionBtn').addEventListener('click', openAddExceptionModal);
-
-    // Apply filters button
-    document.getElementById('applyExceptionFiltersBtn').addEventListener('click', loadCustomerExceptions);
-
-    // Clear filters button
-    document.getElementById('clearExceptionFiltersBtn').addEventListener('click', () => {
-        document.getElementById('exceptionBankAccount').value = '';
-        document.getElementById('exceptionBusinessPartner').value = '';
-        document.getElementById('exceptionPartnerKey').value = '';
-        document.getElementById('exceptionPartnerRef').value = '';
-        loadCustomerExceptions();
-    });
-
-    // Save exception button
-    document.getElementById('saveExceptionBtn').addEventListener('click', saveException);
-
-    // Cancel modal button
-    document.getElementById('cancelExceptionModal').addEventListener('click', closeExceptionModal);
-
-    // Close modal button
-    document.getElementById('closeExceptionModal').addEventListener('click', closeExceptionModal);
-
-    // Close modal on backdrop click
-    document.getElementById('exceptionModal').addEventListener('click', (e) => {
-        if (e.target.id === 'exceptionModal') {
-            closeExceptionModal();
+    try {
+        // Add exception button
+        const addBtn = document.getElementById('addExceptionBtn');
+        if (addBtn) {
+            addBtn.addEventListener('click', openAddExceptionModal);
         }
-    });
+
+        // Apply filters button
+        const applyFiltersBtn = document.getElementById('applyExceptionFiltersBtn');
+        if (applyFiltersBtn) {
+            applyFiltersBtn.addEventListener('click', loadCustomerExceptions);
+        }
+
+        // Clear filters button
+        const clearFiltersBtn = document.getElementById('clearExceptionFiltersBtn');
+        if (clearFiltersBtn) {
+            clearFiltersBtn.addEventListener('click', () => {
+                document.getElementById('exceptionBankAccount').value = '';
+                document.getElementById('exceptionBusinessPartner').value = '';
+                document.getElementById('exceptionPartnerKey').value = '';
+                document.getElementById('exceptionPartnerRef').value = '';
+                loadCustomerExceptions();
+            });
+        }
+
+        // Save exception button
+        const saveBtn = document.getElementById('saveExceptionBtn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', saveException);
+        }
+
+        // Cancel modal button
+        const cancelBtn = document.getElementById('cancelExceptionModal');
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeExceptionModal);
+        }
+
+        // Close modal button
+        const closeBtn = document.getElementById('closeExceptionModal');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', closeExceptionModal);
+        }
+
+        // Close modal on backdrop click
+        const modal = document.getElementById('exceptionModal');
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target.id === 'exceptionModal') {
+                    closeExceptionModal();
+                }
+            });
+        }
+        
+        console.log('Customer Exceptions listeners setup complete');
+    } catch (error) {
+        console.error('Error setting up Customer Exceptions listeners:', error);
+    }
 }
 
 // Customer Exceptions functionality is initialized in DOMContentLoaded above
