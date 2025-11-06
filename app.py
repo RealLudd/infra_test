@@ -191,14 +191,7 @@ def get_raw_data_counts(automation_type='PACO'):
                 if not all([company_code, housebank, currency]):
                     continue
                 
-                # Normalize company_code to remove leading zeros (to match historical data format)
-                original_cc = company_code
-                try:
-                    company_code = str(int(company_code))
-                    print(f"[DEBUG] Normalized {original_cc} -> {company_code}")
-                except (ValueError, TypeError):
-                    # Keep original if not numeric (e.g., CIT01, SAN01)
-                    print(f"[DEBUG] Kept non-numeric company code: {company_code}")
+                # Keep company_code as is (with leading zeros like 0010)
                 
                 # Count Excel files in the directory (each file = 1 payment)
                 # Raw data can be .xls or .xlsx format
@@ -538,7 +531,8 @@ def get_company_status():
     if not df.empty:
         # Get most recent data for each bank account from historical DB
         for _, row in df.sort_values('date', ascending=False).iterrows():
-            company_code = str(int(row['company_code']))  # Normalize to string without leading zeros
+            # Keep company_code with leading zeros (e.g., 0010)
+            company_code = str(row['company_code']).zfill(4) if str(row['company_code']).isdigit() else str(row['company_code'])
             housebank = str(row['housebank'])
             currency = str(row['currency'])
             key = (company_code, housebank, currency)
@@ -564,6 +558,8 @@ def get_company_status():
             'currency': record['currency'],
             'total_payments': record['total_payments'],
             'automated_count': record['automated_count'],
+            'assigned_to_account': record.get('assigned_to_account', 0),
+            'invoices_assigned': record.get('invoices_assigned', 0),
             'file_timestamp': record['file_timestamp'],
             'is_live': True,
             'is_raw': is_raw
@@ -578,13 +574,12 @@ def get_company_status():
         currency = data['currency']
         total_payments = data['total_payments']
         automated_count = data['automated_count']
+        assigned_to_account = data.get('assigned_to_account', 0)
+        invoices_assigned = data.get('invoices_assigned', 0)
         is_live = data.get('is_live', False)
         is_raw = data.get('is_raw', False)
         
-        # Calculate status
-        pending = total_payments - automated_count
-        processed = automated_count
-        
+        # Calculate status - simplified: file exists = Done, otherwise Not Started
         if not is_live:
             # Historical data - show as "Awaiting Today"
             status = 'Awaiting Today'
@@ -592,30 +587,20 @@ def get_company_status():
             start_time = None
             end_time = None
         elif is_raw:
-            # Raw data (not processed yet) - show as "Not Started" with all pending
+            # Raw data (not processed yet) - show as "Not Started"
             status = 'Not Started'
             percentage = 0
             start_time = datetime.combine(date.today(), datetime.strptime('08:00', '%H:%M').time())
             end_time = None
-            processed = 0
-            pending = total_payments
         else:
-            # Processed data - calculate real status
-            if pending == 0 and total_payments > 0:
-                status = 'Done'
-            elif processed > 0 and pending > 0:
-                status = 'In Process'
-            elif processed == 0:
-                status = 'Not Started'
-            else:
-                status = 'In Process'
-            
-            percentage = (processed / total_payments * 100) if total_payments > 0 else 0
+            # Processed data exists - show as "Done"
+            status = 'Done'
+            percentage = (automated_count / total_payments * 100) if total_payments > 0 else 0
             
             # Get start and end times
             file_timestamp = data['file_timestamp']
             start_time = datetime.combine(file_timestamp.date(), datetime.strptime('08:00', '%H:%M').time())
-            end_time = file_timestamp if status == 'Done' else None
+            end_time = file_timestamp
         
         bank_account_status_list.append({
             'bank_account': f"{company_code}_{housebank}_{currency}",
@@ -623,10 +608,11 @@ def get_company_status():
             'housebank': housebank,
             'currency': currency,
             'status': status,
-            'processed': processed if is_live else 0,
-            'pending': pending if is_live else total_payments,
+            'matched_count': automated_count if is_live and not is_raw else 0,
+            'matched_percentage': round(percentage, 1),
+            'customers_assigned': assigned_to_account if is_live and not is_raw else 0,
+            'invoices_assigned': invoices_assigned if is_live and not is_raw else 0,
             'total': total_payments,
-            'percentage': round(percentage, 1),
             'start_time': start_time.isoformat() if start_time else None,
             'end_time': end_time.isoformat() if end_time else None,
             'is_live': is_live

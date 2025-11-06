@@ -585,6 +585,8 @@ async function loadCompanyStatus() {
             
             const formatTime = (date) => date ? date.toLocaleTimeString('en-US', {hour: '2-digit', minute: '2-digit'}) : '--:--';
 
+            const matchedPercentage = company.matched_percentage || 0;
+            
             card.innerHTML = `
                 <div class="company-status-header">
                     <div class="company-code-label">
@@ -600,11 +602,11 @@ async function loadCompanyStatus() {
                 </div>
                 <div class="company-progress">
                     <div class="progress-info">
-                        <span>Progress</span>
-                        <span><strong>${company.percentage}%</strong></span>
+                        <span>Matched</span>
+                        <span><strong>${matchedPercentage}%</strong></span>
                     </div>
                     <div class="progress-bar-container">
-                        <div class="progress-bar" style="width: ${company.percentage}%"></div>
+                        <div class="progress-bar" style="width: ${matchedPercentage}%"></div>
                     </div>
                 </div>
                 <div class="company-time-info">
@@ -612,8 +614,11 @@ async function loadCompanyStatus() {
                     <span><span class="time-label">End:</span>${formatTime(endTime)}</span>
                 </div>
                 <div class="company-details">
-                    <span><i class="fas fa-check-circle"></i> Processed: ${company.processed}</span>
-                    <span><i class="fas fa-clock"></i> Pending: ${company.pending}</span>
+                    <span><i class="fas fa-user-check"></i> Customers: ${company.customers_assigned || 0}</span>
+                    <span><i class="fas fa-file-invoice"></i> Invoices: ${company.invoices_assigned || 0}</span>
+                </div>
+                <div class="company-details">
+                    <span><i class="fas fa-list"></i> Total: ${company.total}</span>
                 </div>
                 <div class="sap-login-hint">
                     <i class="fas fa-info-circle"></i> Ready for SAP login
