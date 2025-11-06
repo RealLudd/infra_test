@@ -17,6 +17,8 @@ app = Flask(__name__)
 CONSOLIDATED_DB_PATH = "data/paco_consolidated.xlsx"
 PACO_NETWORK_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\03_Output\2025"
 FRAN_NETWORK_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\03_Output\2025"  # Update when FRAN path is available
+PACO_RAW_DATA_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\02_RD\02_P\2025"
+FRAN_RAW_DATA_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\02_RD\02_F\2025"  # FRAN raw data path
 
 # Global cache for historical data
 historical_data_cache = None
@@ -146,34 +148,93 @@ def process_live_excel_file(filepath):
         print(f"Error processing live file {filepath}: {str(e)}")
         return None
 
+def get_raw_data_counts(automation_type='PACO'):
+    """
+    Get raw data counts from today's raw data path (before processing starts).
+    Returns list of bank account records with total payment counts.
+    """
+    raw_path = PACO_RAW_DATA_PATH if automation_type == 'PACO' else FRAN_RAW_DATA_PATH
+    
+    # Get yesterday's date (raw data is from yesterday, received today)
+    yesterday = date.today() - timedelta(days=1)
+    yesterday_str = yesterday.strftime('%Y%m%d')
+    month_str = yesterday.strftime('%Y%m')
+    
+    # Build path to yesterday's raw data folder
+    raw_data_path = os.path.join(raw_path, month_str, yesterday_str)
+    
+    records = []
+    
+    if not os.path.exists(raw_data_path):
+        print(f"Raw data path does not exist: {raw_data_path}")
+        return records
+    
+    # Look for subdirectories (e.g., 0010_1050D_EUR)
+    try:
+        for dirname in os.listdir(raw_data_path):
+            dir_path = os.path.join(raw_data_path, dirname)
+            if os.path.isdir(dir_path):
+                # Parse directory name to extract company_code, housebank, currency
+                company_code, housebank, currency = parse_filename(dirname)
+                if not all([company_code, housebank, currency]):
+                    continue
+                
+                # Normalize company_code to remove leading zeros (to match historical data format)
+                company_code = str(int(company_code))
+                
+                # Count Excel files in the directory (each file = 1 payment)
+                # Raw data can be .xls or .xlsx format
+                excel_files = [f for f in os.listdir(dir_path) 
+                              if (f.endswith('.xls') or f.endswith('.xlsx')) and not f.startswith('~$')]
+                total_payments = len(excel_files)
+                
+                if total_payments > 0:
+                    records.append({
+                        'company_code': company_code,
+                        'housebank': housebank,
+                        'currency': currency,
+                        'total_payments': total_payments,
+                        'automated_count': 0,  # Not processed yet
+                        'is_raw': True,
+                        'file_timestamp': datetime.now()
+                    })
+    except Exception as e:
+        print(f"Error reading raw data: {str(e)}")
+    
+    return records
+
 def get_live_data(automation_type='PACO'):
     """
     Read today's files from network path for real-time data.
+    First checks processed output, then falls back to raw data if not available.
     Returns list of processed bank account records.
     """
-    network_path = PACO_NETWORK_PATH if automation_type == 'PACO' else FRAN_NETWORK_PATH
+    output_path = PACO_NETWORK_PATH if automation_type == 'PACO' else FRAN_NETWORK_PATH
     
     # Get today's date to monitor current processing
     today = date.today()
     today_str = today.strftime('%Y%m%d')
     month_str = today.strftime('%Y%m')
     
-    # Build path to today's folder for live data
-    today_path = os.path.join(network_path, month_str, today_str)
+    # Build path to today's processed output folder
+    output_folder = os.path.join(output_path, month_str, today_str)
     
     records = []
     
-    if not os.path.exists(today_path):
-        print(f"Today's data path does not exist: {today_path}")
-        return records
+    # First, try to get processed data
+    if os.path.exists(output_folder):
+        # Process all Excel files in today's output folder
+        for filename in os.listdir(output_folder):
+            if filename.endswith('.xlsx') and not filename.startswith('~$'):
+                filepath = os.path.join(output_folder, filename)
+                record = process_live_excel_file(filepath)
+                if record:
+                    records.append(record)
     
-    # Process all Excel files in today's folder
-    for filename in os.listdir(today_path):
-        if filename.endswith('.xlsx') and not filename.startswith('~$'):
-            filepath = os.path.join(today_path, filename)
-            record = process_live_excel_file(filepath)
-            if record:
-                records.append(record)
+    # If no processed files found, get raw data counts
+    if not records:
+        print(f"No processed data found in {output_folder}, checking raw data...")
+        records = get_raw_data_counts(automation_type)
     
     return records
 
@@ -417,12 +478,15 @@ def get_company_status():
     if not df.empty:
         # Get most recent data for each bank account from historical DB
         for _, row in df.sort_values('date', ascending=False).iterrows():
-            key = (row['company_code'], row['housebank'], row['currency'])
+            company_code = str(int(row['company_code']))  # Normalize to string without leading zeros
+            housebank = str(row['housebank'])
+            currency = str(row['currency'])
+            key = (company_code, housebank, currency)
             if key not in bank_accounts:
                 bank_accounts[key] = {
-                    'company_code': str(row['company_code']),
-                    'housebank': str(row['housebank']),
-                    'currency': str(row['currency']),
+                    'company_code': company_code,
+                    'housebank': housebank,
+                    'currency': currency,
                     'total_payments': int(row['total_payments']),
                     'automated_count': int(row['automated_count']),
                     'date': row['date'],
@@ -433,6 +497,7 @@ def get_company_status():
     live_records = get_live_data(automation_type)
     for record in live_records:
         key = (record['company_code'], record['housebank'], record['currency'])
+        is_raw = record.get('is_raw', False)
         bank_accounts[key] = {
             'company_code': record['company_code'],
             'housebank': record['housebank'],
@@ -440,7 +505,8 @@ def get_company_status():
             'total_payments': record['total_payments'],
             'automated_count': record['automated_count'],
             'file_timestamp': record['file_timestamp'],
-            'is_live': True
+            'is_live': True,
+            'is_raw': is_raw
         }
     
     # Build status list
@@ -453,6 +519,7 @@ def get_company_status():
         total_payments = data['total_payments']
         automated_count = data['automated_count']
         is_live = data.get('is_live', False)
+        is_raw = data.get('is_raw', False)
         
         # Calculate status
         pending = total_payments - automated_count
@@ -464,8 +531,16 @@ def get_company_status():
             percentage = 0
             start_time = None
             end_time = None
+        elif is_raw:
+            # Raw data (not processed yet) - show as "Not Started" with all pending
+            status = 'Not Started'
+            percentage = 0
+            start_time = datetime.combine(date.today(), datetime.strptime('08:00', '%H:%M').time())
+            end_time = None
+            processed = 0
+            pending = total_payments
         else:
-            # Live data - calculate real status
+            # Processed data - calculate real status
             if pending == 0 and total_payments > 0:
                 status = 'Done'
             elif processed > 0 and pending > 0:
