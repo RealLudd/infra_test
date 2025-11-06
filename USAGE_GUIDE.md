@@ -136,8 +136,73 @@ python consolidate_daily_data.py 2025-11-05
 **Updates:**
 - Automatically every 5 minutes
 - Monitors current processing in real-time
+- Click the **refresh button** (sync icon) in navbar for immediate update
 
-**No action needed:** These sections auto-refresh
+**Visual Indicators:**
+- **Not Started**: File hasn't been generated yet (gray badge)
+- **Done**: File has been generated and processed (green badge)
+- **Matched %**: Percentage of payments with perfect match (Match = "Yes")
+- **Value Assigned %**: Percentage of total amount that was matched
+
+---
+
+## Using Filters
+
+### Cascading Filter System
+
+The dashboard includes intelligent filters that work together:
+
+#### **1. Region Filter**
+Select a geographical region to focus on specific company codes:
+- **Iberia**: 0040, 0041
+- **France**: 0043
+- **NDX**: 0019, 0022, 0023, 0024
+- **UK**: 0014
+- **BNX**: 0012, 0018
+- **GerAus**: 0010, 0033
+- **PLN**: 0023
+
+**What happens:**
+- Company Code dropdown shows only codes in that region
+- Bank Account dropdown shows only accounts in that region
+- Overview metrics and charts update to show only that region's data
+
+#### **2. Company Code Filter**
+Select a specific company code (e.g., 0010, 0041, 0043)
+
+**Can be used:**
+- **Alone**: Shows all data for that company code
+- **With Region**: Narrows down within the region (e.g., select "Iberia" → then "0041")
+
+#### **3. Bank Account Configuration Filter**
+Most specific filter - select an exact account configuration (e.g., "0010 - 1050D - EUR")
+
+**Effect:**
+- Overrides Region and Company Code filters
+- Shows data for that specific account only
+- Updates all sections: Overview, Charts, Status Cards
+
+#### **Clear Filters Button**
+Resets all filters and displays complete data.
+
+### Filter Examples
+
+**Example 1: Focus on France**
+1. Select **Region: "France (0043)"**
+2. Company Code automatically shows only: 0043
+3. Bank Account shows: 0043_4335I_EUR, 0043_4350I_EUR
+4. Overview and charts now show only France data
+
+**Example 2: Iberia → Spain (0041)**
+1. Select **Region: "Iberia (0040, 0041)"**
+2. Select **Company Code: "0041"**
+3. Bank Account now shows only 0041 accounts
+4. Data filtered to 0041 within Iberia
+
+**Example 3: Specific Bank Account**
+1. Select **Bank Account: "0010 - 1050D - EUR"**
+2. Other filters are overridden
+3. Shows only that exact account configuration
 
 ---
 
