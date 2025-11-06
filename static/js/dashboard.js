@@ -730,7 +730,7 @@ async function loadCompanyStatus() {
                 </div>
                 <div class="company-progress">
                     <div class="progress-info">
-                        <span>Matched</span>
+                        <span>Processed Automatically</span>
                         <span><strong>${matchedPercentage}%</strong></span>
                     </div>
                     <div class="progress-bar-container">
@@ -739,7 +739,7 @@ async function loadCompanyStatus() {
                 </div>
                 <div class="company-progress" style="margin-top: 8px;">
                     <div class="progress-info">
-                        <span>Value Assigned</span>
+                        <span>Invoices Amount Cleared</span>
                         <span><strong>${valuePercentage}%</strong></span>
                     </div>
                     <div class="progress-bar-container">
@@ -751,11 +751,11 @@ async function loadCompanyStatus() {
                     <span><span class="time-label">End:</span>${formatTime(endTime)}</span>
                 </div>
                 <div class="company-details">
-                    <span><i class="fas fa-user-check"></i> Customers: ${company.customers_assigned || 0}</span>
-                    <span><i class="fas fa-file-invoice"></i> Invoices: ${company.invoices_assigned || 0}</span>
+                    <span><i class="fas fa-user-check"></i> Posted to Customer Accounts: ${company.customers_assigned || 0}</span>
+                    <span><i class="fas fa-file-invoice"></i> Invoices Cleared: ${company.invoices_assigned || 0}</span>
                 </div>
                 <div class="company-details">
-                    <span><i class="fas fa-list"></i> Total: ${company.total}</span>
+                    <span><i class="fas fa-list"></i> Total Payments Received: ${company.total}</span>
                 </div>
                 <div class="sap-login-hint">
                     <i class="fas fa-info-circle"></i> Ready for SAP login
