@@ -92,7 +92,12 @@ def process_live_excel_file(filepath):
         # Calculate metrics
         total_payments = len(df)
         total_received = df['Amount'].sum() if 'Amount' in df.columns else 0
-        automated_count = len(df[df['Match'] == 'YES']) if 'Match' in df.columns else 0
+        
+        # Check Match column (can be 'YES', 'Yes', 'yes', etc.)
+        automated_count = 0
+        if 'Match' in df.columns:
+            automated_count = len(df[df['Match'].str.upper() == 'YES'])
+        
         assigned_to_account = len(df[df['Business_Partner'].notna()]) if 'Business_Partner' in df.columns else 0
         
         invoices_assigned = 0
@@ -147,9 +152,10 @@ def process_live_excel_file(filepath):
         }
         
     except Exception as e:
-        print(f"[ERROR] Failed to process live file {os.path.basename(filepath)}: {str(e)}")
-        import traceback
-        traceback.print_exc()
+        with open('live_data_debug.txt', 'a') as f:
+            f.write(f"  ERROR processing {os.path.basename(filepath)}: {str(e)}\n")
+            import traceback
+            f.write(traceback.format_exc())
         return None
 
 def get_raw_data_counts(automation_type='PACO'):
@@ -240,7 +246,9 @@ def get_live_data(automation_type='PACO'):
     # Build path to yesterday's processed output folder (today's data)
     output_folder = os.path.join(output_path, month_str, yesterday_str)
     
-    print(f"[DEBUG] Looking for processed output in: {output_folder}")
+    # Write debug to file
+    with open('live_data_debug.txt', 'a') as f:
+        f.write(f"\n[{datetime.now()}] Looking for processed output in: {output_folder}\n")
     
     records = []
     
@@ -248,18 +256,22 @@ def get_live_data(automation_type='PACO'):
     if os.path.exists(output_folder):
         files = os.listdir(output_folder)
         excel_files = [f for f in files if f.endswith('.xlsx') and not f.startswith('~$')]
-        print(f"[DEBUG] Found {len(excel_files)} Excel files in output folder")
+        with open('live_data_debug.txt', 'a') as f:
+            f.write(f"Found {len(excel_files)} Excel files in output folder\n")
         
         # Process all Excel files in today's output folder
         for filename in excel_files:
             filepath = os.path.join(output_folder, filename)
-            print(f"[DEBUG] Processing output file: {filename}")
+            with open('live_data_debug.txt', 'a') as f:
+                f.write(f"Processing output file: {filename}\n")
             record = process_live_excel_file(filepath)
             if record:
                 records.append(record)
-                print(f"[DEBUG]   SUCCESS: Processed {filename}")
+                with open('live_data_debug.txt', 'a') as f:
+                    f.write(f"  SUCCESS: Processed {filename}\n")
             else:
-                print(f"[DEBUG]   FAILED: Could not process {filename}")
+                with open('live_data_debug.txt', 'a') as f:
+                    f.write(f"  FAILED: Could not process {filename}\n")
     
     # If no processed files found, get raw data counts
     if not records:
