@@ -419,15 +419,25 @@ function filterCompanyStatus() {
     const regionFilter = document.getElementById('regionFilter').value;
     const companyCodeFilter = document.getElementById('companyCodeFilterOnly').value;
     
+    console.log(`Filtering - Region: "${regionFilter}", Company Code: "${companyCodeFilter}"`);
+    
     const cards = document.querySelectorAll('.company-status-card');
+    let visibleCount = 0;
     
     cards.forEach(card => {
-        const companyCode = card.querySelector('.company-code-main').textContent.trim();
+        // Extract company code from the card (removing icon and whitespace)
+        const companyCodeText = card.querySelector('.company-code-main').textContent.trim();
+        // Remove any non-alphanumeric characters (removes icons and spaces)
+        const companyCode = companyCodeText.replace(/[^\w]/g, '');
+        
         let show = true;
         
         // Apply region filter
         if (regionFilter && REGION_MAP[regionFilter]) {
             show = REGION_MAP[regionFilter].includes(companyCode);
+            if (!show) {
+                console.log(`  Hiding ${companyCode} - not in region ${regionFilter}`);
+            }
         }
         
         // Apply company code filter
@@ -435,8 +445,11 @@ function filterCompanyStatus() {
             show = companyCode === companyCodeFilter;
         }
         
+        if (show) visibleCount++;
         card.style.display = show ? '' : 'none';
     });
+    
+    console.log(`Filter result: ${visibleCount} cards visible out of ${cards.length}`);
 }
 
 // Initialize dashboard
