@@ -182,7 +182,13 @@ def get_raw_data_counts(automation_type='PACO'):
                     continue
                 
                 # Normalize company_code to remove leading zeros (to match historical data format)
-                company_code = str(int(company_code))
+                original_cc = company_code
+                try:
+                    company_code = str(int(company_code))
+                    print(f"[DEBUG] Normalized {original_cc} -> {company_code}")
+                except (ValueError, TypeError):
+                    # Keep original if not numeric (e.g., CIT01, SAN01)
+                    print(f"[DEBUG] Kept non-numeric company code: {company_code}")
                 
                 # Count Excel files in the directory (each file = 1 payment)
                 # Raw data can be .xls or .xlsx format
