@@ -247,7 +247,12 @@ def index():
 def get_overview():
     """
     Get dashboard overview with automation metrics.
-    Combines historical data (from consolidated DB) with today's live data.
+    
+    Data Sources:
+    - "Today" period: Only live data from today (real-time from network path)
+    - "Week/Month/Quarter": Historical data from consolidated DB (updated daily)
+    
+    This endpoint does NOT auto-refresh - use for overview cards only.
     """
     period = request.args.get('period', 'today')
     bank_account = request.args.get('bank_account', '')
@@ -373,7 +378,10 @@ def get_overview():
 @app.route('/api/automation-trend')
 def get_automation_trend():
     """
-    Get automation trend data for charts (historical data only).
+    Get automation trend data for charts.
+    
+    Data Source: Historical data from consolidated DB ONLY (updated daily)
+    Does NOT include today's live data - shows completed days only.
     """
     period = request.args.get('period', 'week')
     bank_account = request.args.get('bank_account', '')
@@ -465,8 +473,15 @@ def get_automation_trend():
 @app.route('/api/company-status')
 def get_company_status():
     """
-    Get processing status for each bank account configuration.
-    Shows live data when available, otherwise shows most recent historical data.
+    Get real-time processing status for each bank account configuration.
+    
+    Data Source: TODAY's live data ONLY (from raw data or processed output)
+    - Before 8:00 AM: Shows "Awaiting Today" with historical counts
+    - 8:00 AM - Processing: Shows raw data counts (Not Started)
+    - During Processing: Shows live progress from output files (In Process)
+    - After Processing: Shows completion status (Done)
+    
+    Auto-refreshes every 5 minutes on dashboard.
     Always displays all known bank account configurations.
     """
     automation_type = request.args.get('automation_type', 'PACO')
@@ -582,7 +597,11 @@ def get_company_status():
 @app.route('/api/recent-transactions')
 def get_recent_transactions():
     """
-    Get recent transactions from today's live data.
+    Get recent transactions from today's processing.
+    
+    Data Source: TODAY's live data ONLY (from processed output files)
+    Shows last 10 transactions across all bank accounts.
+    Auto-refreshes every 5 minutes on dashboard.
     """
     automation_type = request.args.get('automation_type', 'PACO')
     
