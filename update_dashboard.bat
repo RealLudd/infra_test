@@ -38,35 +38,37 @@ if errorlevel 1 (
     echo.
     echo The dashboard will be available at: http://localhost:5000
     echo.
-    echo Press Ctrl+C to stop the server when you're done.
+    echo Press Ctrl+C to stop the server when done.
     echo ========================================================
     echo.
     
     REM Start Flask in the foreground
     python app.py
-) else (
-    echo Dashboard is already running!
-    echo.
-    echo Opening dashboard in browser...
-    start http://localhost:5000
-    echo.
-    echo ========================================================
-    echo Dashboard opened at: http://localhost:5000
-    echo ========================================================
-    echo.
-    echo To refresh the data:
-    echo   1. Click the REFRESH button (sync icon) in top-right corner
-    echo   2. Click period buttons (Today/Week/Month/Quarter) for overview
-    echo   3. Or press F5 to refresh entire page
-    echo.
-    echo The refresh button updates:
-    echo   - Company Code Processing Status
-    echo   - Recent Transactions
-    echo.
-    echo These sections also auto-refresh every 5 minutes.
-    echo ========================================================
-    echo.
+    pause
+    exit /b 0
 )
 
+REM If we reach here, Flask is running
+echo Dashboard is already running!
+echo.
+echo Opening dashboard browser...
+start http://localhost:5000
+timeout /t 2 /nobreak >nul
+echo.
+echo ========================================================
+echo Dashboard opened at: http://localhost:5000
+echo ========================================================
+echo.
+echo To refresh the data:
+echo   1. Click the REFRESH button (sync icon) at top-right
+echo   2. Click period buttons (Today/Week/Month/Quarter)
+echo   3. Or press F5 to refresh entire page
+echo.
+echo The refresh button updates:
+echo   - Company Code Processing Status
+echo   - Recent Transactions
+echo.
+echo These sections also auto-refresh every 5 minutes.
+echo ========================================================
+echo.
 pause
-
