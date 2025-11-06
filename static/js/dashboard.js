@@ -909,9 +909,9 @@ function setupCustomerExceptionsNav() {
                     modal.style.display = 'none';
                 }
 
-                // Show dashboard sections, hide customer exceptions
-                document.querySelectorAll('.content > div:not(#customer-exceptions)').forEach(el => {
-                    if (el.id !== 'customer-exceptions') {
+                // Show dashboard sections, hide customer exceptions and modal
+                document.querySelectorAll('.content > div:not(#customer-exceptions):not(#exceptionModal)').forEach(el => {
+                    if (el.id !== 'customer-exceptions' && el.id !== 'exceptionModal') {
                         el.style.display = 'block';
                     }
                 });
@@ -936,15 +936,24 @@ function setupCustomerExceptionsNav() {
                     const displayBefore = modal.style.display;
                     modal.style.display = 'none';
                     console.log(`Modal display changed from "${displayBefore}" to "${modal.style.display}"`);
+                    
+                    // Check if something changes it back
+                    setTimeout(() => {
+                        console.log(`⏰ Modal display after 500ms: "${modal.style.display}"`);
+                        if (modal.style.display !== 'none') {
+                            console.error('🚨 SOMETHING CHANGED THE MODAL DISPLAY BACK!');
+                            modal.style.display = 'none';  // Force it closed again
+                        }
+                    }, 500);
                 }
 
-                // Show dashboard sections, hide customer exceptions
-                document.querySelectorAll('.content > div:not(#customer-exceptions)').forEach(el => {
-                    if (el.id !== 'customer-exceptions') {
+                // Show dashboard sections, hide customer exceptions and modal
+                document.querySelectorAll('.content > div:not(#customer-exceptions):not(#exceptionModal)').forEach(el => {
+                    if (el.id !== 'customer-exceptions' && el.id !== 'exceptionModal') {
                         el.style.display = 'block';
                     }
                 });
-                console.log('Dashboard sections shown');
+                console.log('Dashboard sections shown (excluding modal)');
 
                 const exceptionsSection = document.getElementById('customer-exceptions');
                 if (exceptionsSection) {
