@@ -13,8 +13,9 @@ CONSOLIDATED_DB_PATH = "data/fran_consolidated.xlsx"
 FRAN_OUTPUT_PATH = r"\\emea\central\SSC_GROUP\BPA\30_Automations\90_CashOps\02_Posting Cash\03_Output\2025"
 
 def parse_filename(filename):
-    """Parse filename to extract company_code, housebank, and currency."""
-    name = filename.replace('.xlsx', '')
+    """Parse FRAN filename to extract company_code, housebank, and currency."""
+    # Remove .csv extension and _FINAL_OUTPUT suffix
+    name = filename.replace('.csv', '').replace('_FINAL_OUTPUT', '')
     parts = name.split('_')
     
     if len(parts) >= 3:
@@ -26,18 +27,21 @@ def parse_filename(filename):
     return None, None, None
 
 def count_invoices(docnumbers_str):
-    """Count invoices from DocNumbers column (separated by ;)"""
+    """Count invoices from DocNumbers column (FRAN uses comma separator)"""
     if pd.isna(docnumbers_str) or docnumbers_str == '':
         return 0
-    invoices = [inv.strip() for inv in str(docnumbers_str).split(';') if inv.strip()]
+    # FRAN uses comma (,) as separator instead of semicolon (;)
+    invoices = [inv.strip() for inv in str(docnumbers_str).split(',') if inv.strip()]
     return len(invoices)
 
 def process_output_file(filepath, data_date):
-    """Process a single FRAN output file and extract metrics."""
+    """Process a single FRAN CSV output file and extract metrics."""
     try:
         print(f"  Processing: {os.path.basename(filepath)}")
         
-        df = pd.read_excel(filepath, engine='openpyxl')
+        # FRAN files are CSV format with semicolon delimiter and European number format
+        # Use decimal=',' for European format (comma as decimal) and thousands='.' 
+        df = pd.read_csv(filepath, sep=';', decimal=',', thousands='.')
         df.columns = df.columns.str.strip()
         
         filename = os.path.basename(filepath)
@@ -141,21 +145,21 @@ def consolidate_today_data(target_date=None):
     
     print(f"Reading from: {output_folder}\n")
     
-    # Process all Excel files
+    # Process all CSV files (FRAN uses CSV format)
     new_records = []
-    excel_files = [f for f in os.listdir(output_folder) 
-                   if f.endswith('.xlsx') and not f.startswith('~$')]
+    csv_files = [f for f in os.listdir(output_folder) 
+                 if f.endswith('.csv') and not f.startswith('~$')]
     
-    if not excel_files:
-        print(f"ERROR: No Excel files found in the FRAN output folder.")
+    if not csv_files:
+        print(f"ERROR: No CSV files found in the FRAN output folder.")
         return False
     
-    print(f"Found {len(excel_files)} FRAN files to process:\n")
+    print(f"Found {len(csv_files)} FRAN files to process:\n")
     
     # Calculate data date (yesterday's payments processed today)
     data_date = target_date - timedelta(days=1)
     
-    for filename in excel_files:
+    for filename in csv_files:
         filepath = os.path.join(output_folder, filename)
         record = process_output_file(filepath, data_date)
         if record:
