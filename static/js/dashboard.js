@@ -10,6 +10,7 @@ let automationChart = null;
 let currentBankAccount = '';  // Combined filter: "company_code|housebank|currency"
 let currentRegion = '';  // Region filter
 let currentCompanyCode = '';  // Company code filter
+let allBankAccounts = [];  // Store all bank accounts for cascading filters
 
 // Format currency with EUR formatting
 function formatCurrency(amount) {
@@ -377,40 +378,81 @@ async function loadFilterOptions() {
         const data = await response.json();
         
         console.log(`Loaded ${data.bank_accounts.length} bank accounts for filters`);
-
-        // Populate bank account filter
-        const bankAccountSelect = document.getElementById('bankAccountFilter');
-        if (!bankAccountSelect) {
-            console.error('Bank account select element not found!');
-            return;
-        }
         
-        data.bank_accounts.forEach(account => {
-            const option = document.createElement('option');
-            option.value = account.value;
-            option.textContent = account.label;
-            bankAccountSelect.appendChild(option);
-        });
-        console.log(`Added ${data.bank_accounts.length} options to bank account filter`);
-
-        // Populate company code filter
-        const companyCodes = [...new Set(data.bank_accounts.map(acc => acc.value.split('|')[0]))].sort();
-        const companyCodeSelect = document.getElementById('companyCodeFilterOnly');
-        if (!companyCodeSelect) {
-            console.error('Company code select element not found!');
-            return;
-        }
+        // Store all bank accounts globally for cascading filters
+        allBankAccounts = data.bank_accounts;
         
-        companyCodes.forEach(code => {
-            const option = document.createElement('option');
-            option.value = code;
-            option.textContent = code;
-            companyCodeSelect.appendChild(option);
-        });
-        console.log(`Added ${companyCodes.length} unique company codes to company code filter`);
+        // Populate filters
+        updateFilterDropdowns();
     } catch (error) {
         console.error('Error loading filter options:', error);
     }
+}
+
+// Update filter dropdowns based on current selections (cascading filters)
+function updateFilterDropdowns() {
+    const regionFilter = document.getElementById('regionFilter')?.value || '';
+    const companyCodeFilter = document.getElementById('companyCodeFilterOnly')?.value || '';
+    
+    // Filter bank accounts based on region or company code
+    let filteredAccounts = allBankAccounts;
+    let availableCompanyCodes = [];
+    
+    if (regionFilter && REGION_MAP[regionFilter]) {
+        // Filter by region
+        const regionCodes = REGION_MAP[regionFilter];
+        filteredAccounts = allBankAccounts.filter(acc => {
+            const code = acc.value.split('|')[0];
+            return regionCodes.includes(code);
+        });
+        availableCompanyCodes = regionCodes;
+    } else if (companyCodeFilter) {
+        // Filter by company code
+        filteredAccounts = allBankAccounts.filter(acc => {
+            const code = acc.value.split('|')[0];
+            return code === companyCodeFilter;
+        });
+        availableCompanyCodes = [companyCodeFilter];
+    } else {
+        // No filter - show all
+        availableCompanyCodes = [...new Set(allBankAccounts.map(acc => acc.value.split('|')[0]))].sort();
+    }
+    
+    // Update Company Code dropdown
+    const companyCodeSelect = document.getElementById('companyCodeFilterOnly');
+    if (companyCodeSelect) {
+        const currentValue = companyCodeSelect.value;
+        companyCodeSelect.innerHTML = '<option value="">All Company Codes</option>';
+        
+        availableCompanyCodes.sort().forEach(code => {
+            const option = document.createElement('option');
+            option.value = code;
+            option.textContent = code;
+            if (code === currentValue) {
+                option.selected = true;
+            }
+            companyCodeSelect.appendChild(option);
+        });
+    }
+    
+    // Update Bank Account dropdown
+    const bankAccountSelect = document.getElementById('bankAccountFilter');
+    if (bankAccountSelect) {
+        const currentValue = bankAccountSelect.value;
+        bankAccountSelect.innerHTML = '<option value="">All Bank Accounts</option>';
+        
+        filteredAccounts.forEach(account => {
+            const option = document.createElement('option');
+            option.value = account.value;
+            option.textContent = account.label;
+            if (account.value === currentValue) {
+                option.selected = true;
+            }
+            bankAccountSelect.appendChild(option);
+        });
+    }
+    
+    console.log(`Updated dropdowns - ${availableCompanyCodes.length} company codes, ${filteredAccounts.length} bank accounts`);
 }
 
 // Handle filter change
@@ -428,6 +470,11 @@ function clearAllFilters() {
     document.getElementById('regionFilter').value = '';
     document.getElementById('companyCodeFilterOnly').value = '';
     currentBankAccount = '';
+    currentRegion = '';
+    currentCompanyCode = '';
+
+    // Reset dropdowns to show all options
+    updateFilterDropdowns();
 
     // Reload data without filters
     loadOverview();
@@ -531,8 +578,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Setup filter event listeners
     document.getElementById('bankAccountFilter').addEventListener('change', handleFilterChange);
-    document.getElementById('regionFilter').addEventListener('change', filterCompanyStatus);
-    document.getElementById('companyCodeFilterOnly').addEventListener('change', filterCompanyStatus);
+    document.getElementById('regionFilter').addEventListener('change', () => {
+        updateFilterDropdowns();  // Update cascading dropdowns
+        filterCompanyStatus();    // Apply filter
+    });
+    document.getElementById('companyCodeFilterOnly').addEventListener('change', () => {
+        updateFilterDropdowns();  // Update cascading dropdowns
+        filterCompanyStatus();    // Apply filter
+    });
     document.getElementById('clearFiltersBtn').addEventListener('click', clearAllFilters);
 
     // Setup refresh data button
