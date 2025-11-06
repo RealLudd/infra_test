@@ -104,31 +104,40 @@ function renderAutomationChart(data) {
     }
 
     // Determine which data to show based on selected metric
-    let pacoData, franData, metricLabel;
+    let pacoData, franData, metricLabel, chartType, isPercentage;
     
     switch(currentChartMetric) {
         case 'automated_percentage':
             pacoData = data.paco_automated || data.paco_percentages;
             franData = data.fran_automated || data.fran_percentages;
             metricLabel = 'Processed Automatically';
+            chartType = 'line';
+            isPercentage = true;
             break;
         case 'customers_percentage':
             pacoData = data.paco_customers || [];
             franData = data.fran_customers || [];
             metricLabel = 'Posted to Customer Accounts';
+            chartType = 'line';
+            isPercentage = true;
             break;
         case 'invoices_percentage':
-            pacoData = data.paco_invoices || [];
-            franData = data.fran_invoices || [];
+            // Use actual invoice counts instead of percentages for bar chart
+            pacoData = data.paco_invoices_count || [];
+            franData = data.fran_invoices_count || [];
             metricLabel = 'Invoices Cleared';
+            chartType = 'bar';
+            isPercentage = false;
             break;
         default:
             pacoData = data.paco_automated || data.paco_percentages;
             franData = data.fran_automated || data.fran_percentages;
             metricLabel = 'Processed Automatically';
+            chartType = 'line';
+            isPercentage = true;
     }
 
-    // Create gradients for PACO and FRAN lines
+    // Create gradients for PACO and FRAN
     const pacoGradient = ctx.createLinearGradient(0, 0, 0, 400);
     pacoGradient.addColorStop(0, 'rgba(29, 140, 248, 0.3)');
     pacoGradient.addColorStop(1, 'rgba(29, 140, 248, 0.0)');
@@ -137,40 +146,43 @@ function renderAutomationChart(data) {
     franGradient.addColorStop(0, 'rgba(225, 78, 202, 0.3)');
     franGradient.addColorStop(1, 'rgba(225, 78, 202, 0.0)');
 
+    // Build datasets based on chart type
+    const datasets = [
+        {
+            label: `PACO - ${metricLabel}${isPercentage ? ' %' : ''}`,
+            data: pacoData,
+            borderColor: '#1d8cf8',
+            backgroundColor: chartType === 'bar' ? 'rgba(29, 140, 248, 0.6)' : pacoGradient,
+            borderWidth: chartType === 'bar' ? 0 : 3,
+            fill: chartType === 'line',
+            tension: chartType === 'line' ? 0.4 : 0,
+            pointBackgroundColor: '#1d8cf8',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: chartType === 'line' ? 4 : 0,
+            pointHoverRadius: chartType === 'line' ? 6 : 0,
+        },
+        {
+            label: `FRAN - ${metricLabel}${isPercentage ? ' %' : ''}`,
+            data: franData,
+            borderColor: '#e14eca',
+            backgroundColor: chartType === 'bar' ? 'rgba(225, 78, 202, 0.6)' : franGradient,
+            borderWidth: chartType === 'bar' ? 0 : 3,
+            fill: chartType === 'line',
+            tension: chartType === 'line' ? 0.4 : 0,
+            pointBackgroundColor: '#e14eca',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: chartType === 'line' ? 4 : 0,
+            pointHoverRadius: chartType === 'line' ? 6 : 0,
+        }
+    ];
+
     automationChart = new Chart(ctx, {
-        type: 'line',
+        type: chartType,
         data: {
             labels: data.labels,
-            datasets: [
-                {
-                    label: `PACO - ${metricLabel} %`,
-                    data: pacoData,
-                    borderColor: '#1d8cf8',
-                    backgroundColor: pacoGradient,
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#1d8cf8',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                },
-                {
-                    label: `FRAN - ${metricLabel} %`,
-                    data: franData,
-                    borderColor: '#e14eca',
-                    backgroundColor: franGradient,
-                    borderWidth: 3,
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#e14eca',
-                    pointBorderColor: '#ffffff',
-                    pointBorderWidth: 2,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                }
-            ]
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -199,13 +211,20 @@ function renderAutomationChart(data) {
                     callbacks: {
                         label: function(context) {
                             const systemName = context.dataset.label.split(' ')[0]; // Get PACO or FRAN
-                            const percentage = context.parsed.y;
-                            return `${systemName}: ${percentage}%`;
+                            const value = context.parsed.y;
+                            if (isPercentage) {
+                                return `${systemName}: ${value}%`;
+                            } else {
+                                return `${systemName}: ${formatNumber(value)} invoices`;
+                            }
                         },
                         footer: function(tooltipItems) {
                             const index = tooltipItems[0].dataIndex;
-                            const count = data.payment_counts[index];
-                            return `Total Payments: ${formatNumber(count)}`;
+                            const pacoCount = data.paco_payment_counts ? data.paco_payment_counts[index] : 0;
+                            const franCount = data.fran_payment_counts ? data.fran_payment_counts[index] : 0;
+                            
+                            // Show separate counts (they should be the same, but showing both for clarity)
+                            return `PACO Payments: ${formatNumber(pacoCount)}\nFRAN Payments: ${formatNumber(franCount)}`;
                         }
                     }
                 }
@@ -213,7 +232,7 @@ function renderAutomationChart(data) {
             scales: {
                 y: {
                     beginAtZero: true,
-                    max: 100,
+                    max: isPercentage ? 100 : undefined,
                     ticks: {
                         color: '#9a9a9a',
                         font: {
@@ -221,7 +240,11 @@ function renderAutomationChart(data) {
                             family: 'Poppins'
                         },
                         callback: function(value) {
-                            return value + '%';
+                            if (isPercentage) {
+                                return value + '%';
+                            } else {
+                                return formatNumber(value);
+                            }
                         }
                     },
                     grid: {

@@ -652,9 +652,13 @@ def get_automation_trend():
     paco_automated = []
     paco_customers = []
     paco_invoices = []
+    paco_invoices_count = []  # Actual invoice counts for bar chart
+    paco_payment_counts = []  # PACO payment counts
     fran_automated = []
     fran_customers = []
     fran_invoices = []
+    fran_invoices_count = []  # Actual invoice counts for bar chart
+    fran_payment_counts = []  # FRAN payment counts
     
     # Generate labels and data for each date
     for date_obj in sorted(all_dates):
@@ -676,10 +680,14 @@ def get_automation_trend():
             paco_automated.append(round((paco_auto / paco_total * 100) if paco_total > 0 else 0, 1))
             paco_customers.append(round((paco_cust / paco_total * 100) if paco_total > 0 else 0, 1))
             paco_invoices.append(round((paco_inv / paco_total * 100) if paco_total > 0 else 0, 1))
+            paco_invoices_count.append(int(paco_inv))
+            paco_payment_counts.append(int(paco_total))
         else:
             paco_automated.append(0)
             paco_customers.append(0)
             paco_invoices.append(0)
+            paco_invoices_count.append(0)
+            paco_payment_counts.append(0)
         
         # Get FRAN data for this date
         fran_row = fran_daily[fran_daily['date'] == date_obj] if not fran_daily.empty else pd.DataFrame()
@@ -692,18 +700,18 @@ def get_automation_trend():
             fran_automated.append(round((fran_auto / fran_total * 100) if fran_total > 0 else 0, 1))
             fran_customers.append(round((fran_cust / fran_total * 100) if fran_total > 0 else 0, 1))
             fran_invoices.append(round((fran_inv / fran_total * 100) if fran_total > 0 else 0, 1))
+            fran_invoices_count.append(int(fran_inv))
+            fran_payment_counts.append(int(fran_total))
         else:
             fran_automated.append(0)
             fran_customers.append(0)
             fran_invoices.append(0)
-        
-        # Total payments from both systems (or just the one that has data)
-        total_count = 0
-        if not paco_row.empty:
-            total_count += int(paco_row['total_payments'].iloc[0])
-        if not fran_row.empty:
-            total_count += int(fran_row['total_payments'].iloc[0])
-        payment_counts.append(total_count)
+            fran_invoices_count.append(0)
+            fran_payment_counts.append(0)
+    
+    # Note: payment_counts kept for backward compatibility but deprecated
+    # Use paco_payment_counts and fran_payment_counts instead
+    payment_counts = paco_payment_counts  # Use PACO as reference since they're the same payments
     
     return jsonify({
         'labels': labels,
@@ -712,10 +720,14 @@ def get_automation_trend():
         'paco_automated': paco_automated,
         'paco_customers': paco_customers,
         'paco_invoices': paco_invoices,
+        'paco_invoices_count': paco_invoices_count,
+        'paco_payment_counts': paco_payment_counts,
         'fran_automated': fran_automated,
         'fran_customers': fran_customers,
         'fran_invoices': fran_invoices,
-        'payment_counts': payment_counts
+        'fran_invoices_count': fran_invoices_count,
+        'fran_payment_counts': fran_payment_counts,
+        'payment_counts': payment_counts  # Deprecated - use paco_payment_counts/fran_payment_counts
     })
 
 @app.route('/api/company-status')
