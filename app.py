@@ -163,10 +163,12 @@ def get_raw_data_counts(automation_type='PACO'):
     # Build path to yesterday's raw data folder
     raw_data_path = os.path.join(raw_path, month_str, yesterday_str)
     
+    print(f"[DEBUG] Looking for raw data in: {raw_data_path}")
+    
     records = []
     
     if not os.path.exists(raw_data_path):
-        print(f"Raw data path does not exist: {raw_data_path}")
+        print(f"[DEBUG] Raw data path does not exist: {raw_data_path}")
         return records
     
     # Look for subdirectories (e.g., 0010_1050D_EUR)
@@ -215,16 +217,20 @@ def get_live_data(automation_type='PACO'):
     Read today's files from network path for real-time data.
     First checks processed output, then falls back to raw data if not available.
     Returns list of processed bank account records.
+    
+    Note: "Today" means yesterday's payments (received and processed today).
     """
     output_path = PACO_NETWORK_PATH if automation_type == 'PACO' else FRAN_NETWORK_PATH
     
-    # Get today's date to monitor current processing
-    today = date.today()
-    today_str = today.strftime('%Y%m%d')
-    month_str = today.strftime('%Y%m')
+    # Get yesterday's date (today's payments are from yesterday)
+    yesterday = date.today() - timedelta(days=1)
+    yesterday_str = yesterday.strftime('%Y%m%d')
+    month_str = yesterday.strftime('%Y%m')
     
-    # Build path to today's processed output folder
-    output_folder = os.path.join(output_path, month_str, today_str)
+    # Build path to yesterday's processed output folder (today's data)
+    output_folder = os.path.join(output_path, month_str, yesterday_str)
+    
+    print(f"[DEBUG] Looking for processed output in: {output_folder}")
     
     records = []
     
@@ -240,8 +246,11 @@ def get_live_data(automation_type='PACO'):
     
     # If no processed files found, get raw data counts
     if not records:
-        print(f"No processed data found in {output_folder}, checking raw data...")
+        print(f"[DEBUG] No processed data found in {output_folder}, checking raw data...")
         records = get_raw_data_counts(automation_type)
+        print(f"[DEBUG] Raw data returned {len(records)} records")
+    else:
+        print(f"[DEBUG] Found {len(records)} processed files")
     
     return records
 
