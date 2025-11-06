@@ -8,6 +8,8 @@ let currentPeriod = 'week';
 let currentChartPeriod = 'week';
 let automationChart = null;
 let currentBankAccount = '';  // Combined filter: "company_code|housebank|currency"
+let currentRegion = '';  // Region filter
+let currentCompanyCode = '';  // Company code filter
 
 // Format currency with EUR formatting
 function formatCurrency(amount) {
@@ -24,7 +26,9 @@ async function loadOverview() {
     try {
         const params = new URLSearchParams({
             period: currentPeriod,
-            bank_account: currentBankAccount
+            bank_account: currentBankAccount,
+            region: currentRegion,
+            company_code: currentCompanyCode
         });
         const response = await fetch(`/api/overview?${params}`);
         const data = await response.json();
@@ -69,7 +73,9 @@ async function loadAutomationTrend() {
     try {
         const params = new URLSearchParams({
             period: currentChartPeriod,
-            bank_account: currentBankAccount
+            bank_account: currentBankAccount,
+            region: currentRegion,
+            company_code: currentCompanyCode
         });
         const response = await fetch(`/api/automation-trend?${params}`);
         const data = await response.json();
@@ -429,12 +435,20 @@ function clearAllFilters() {
     filterCompanyStatus();
 }
 
-// Filter company status cards based on region or company code
+// Filter company status cards and reload overview data
 function filterCompanyStatus() {
     const regionFilter = document.getElementById('regionFilter')?.value || '';
     const companyCodeFilter = document.getElementById('companyCodeFilterOnly')?.value || '';
     
+    // Update global filter state
+    currentRegion = regionFilter;
+    currentCompanyCode = companyCodeFilter;
+    
     console.log(`Filtering - Region: "${regionFilter}", Company Code: "${companyCodeFilter}"`);
+    
+    // Reload overview and trend data with new filters
+    loadOverview();
+    loadAutomationTrend();
     
     const cards = document.querySelectorAll('.company-status-card');
     let visibleCount = 0;
