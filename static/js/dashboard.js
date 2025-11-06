@@ -15,12 +15,12 @@ let allBankAccounts = [];  // Store all bank accounts for cascading filters
 
 // Format currency with EUR formatting
 function formatCurrency(amount) {
-    return new Intl.NumberFormat('en-US', {
+    return new Intl.NumberFormat('de-DE', {
         style: 'currency',
         currency: 'EUR',
         minimumFractionDigits: 0,
         maximumFractionDigits: 0
-    }).format(amount);
+    }).format(amount).replace(/\s/g, ' '); // Ensure proper spacing
 }
 
 // Format number with thousand separators (e.g., 6,563)
