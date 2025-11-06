@@ -41,10 +41,7 @@ htmlcov/
 # Debug files
 *debug*.txt
 
-# Temporary test scripts (keep test_app.py for unit tests)
-test_currency_conversion.py
-test_one_day.py
-test_single_file.py
-test_processor_single.py
-summary_one_day.py
+# Test scripts
+test_*.py
+summary_*.py
 
