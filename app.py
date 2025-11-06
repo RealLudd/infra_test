@@ -96,7 +96,9 @@ def process_live_excel_file(filepath):
         assigned_to_account = len(df[df['Business_Partner'].notna()]) if 'Business_Partner' in df.columns else 0
         
         invoices_assigned = 0
-        if 'Docnumbers' in df.columns:
+        if 'DocNumbers' in df.columns:
+            invoices_assigned = df['DocNumbers'].apply(count_invoices).sum()
+        elif 'Docnumbers' in df.columns:
             invoices_assigned = df['Docnumbers'].apply(count_invoices).sum()
         
         value_assigned = 0
@@ -145,7 +147,9 @@ def process_live_excel_file(filepath):
         }
         
     except Exception as e:
-        print(f"Error processing live file {filepath}: {str(e)}")
+        print(f"[ERROR] Failed to process live file {os.path.basename(filepath)}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return None
 
 def get_raw_data_counts(automation_type='PACO'):
@@ -242,13 +246,20 @@ def get_live_data(automation_type='PACO'):
     
     # First, try to get processed data
     if os.path.exists(output_folder):
+        files = os.listdir(output_folder)
+        excel_files = [f for f in files if f.endswith('.xlsx') and not f.startswith('~$')]
+        print(f"[DEBUG] Found {len(excel_files)} Excel files in output folder")
+        
         # Process all Excel files in today's output folder
-        for filename in os.listdir(output_folder):
-            if filename.endswith('.xlsx') and not filename.startswith('~$'):
-                filepath = os.path.join(output_folder, filename)
-                record = process_live_excel_file(filepath)
-                if record:
-                    records.append(record)
+        for filename in excel_files:
+            filepath = os.path.join(output_folder, filename)
+            print(f"[DEBUG] Processing output file: {filename}")
+            record = process_live_excel_file(filepath)
+            if record:
+                records.append(record)
+                print(f"[DEBUG]   SUCCESS: Processed {filename}")
+            else:
+                print(f"[DEBUG]   FAILED: Could not process {filename}")
     
     # If no processed files found, get raw data counts
     if not records:
