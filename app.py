@@ -228,13 +228,13 @@ def get_raw_data_counts(automation_type='PACO'):
     """
     raw_path = PACO_RAW_DATA_PATH if automation_type == 'PACO' else FRAN_RAW_DATA_PATH
     
-    # Get today's date (raw data folder is created with today's date)
-    today = date.today()
-    today_str = today.strftime('%Y%m%d')
-    month_str = today.strftime('%Y%m')
+    # Get yesterday's date (raw data is received today but in yesterday's folder)
+    yesterday = date.today() - timedelta(days=1)
+    yesterday_str = yesterday.strftime('%Y%m%d')
+    month_str = yesterday.strftime('%Y%m')
     
-    # Build path to today's raw data folder
-    raw_data_path = os.path.join(raw_path, month_str, today_str)
+    # Build path to yesterday's raw data folder (today's data)
+    raw_data_path = os.path.join(raw_path, month_str, yesterday_str)
     
     print(f"[DEBUG] Looking for raw data in: {raw_data_path}")
     
@@ -290,17 +290,17 @@ def get_live_data(automation_type='PACO'):
     First checks processed output, then falls back to raw data if not available.
     Returns list of processed bank account records.
     
-    Note: Looks at TODAY's folder (not yesterday's).
+    Note: "Today" means yesterday's payments (received and processed today).
     """
     output_path = PACO_NETWORK_PATH if automation_type == 'PACO' else FRAN_NETWORK_PATH
     
-    # Get today's date (live data folder uses today's date)
-    today = date.today()
-    today_str = today.strftime('%Y%m%d')
-    month_str = today.strftime('%Y%m')
+    # Get yesterday's date (today's payments are from yesterday's folder)
+    yesterday = date.today() - timedelta(days=1)
+    yesterday_str = yesterday.strftime('%Y%m%d')
+    month_str = yesterday.strftime('%Y%m')
     
-    # Build path to today's processed output folder
-    output_folder = os.path.join(output_path, month_str, today_str)
+    # Build path to yesterday's processed output folder (today's data)
+    output_folder = os.path.join(output_path, month_str, yesterday_str)
     
     # Write debug to file
     with open('live_data_debug.txt', 'a') as f:
