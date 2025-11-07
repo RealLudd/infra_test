@@ -228,13 +228,13 @@ def get_raw_data_counts(automation_type='PACO'):
     """
     raw_path = PACO_RAW_DATA_PATH if automation_type == 'PACO' else FRAN_RAW_DATA_PATH
     
-    # Get yesterday's date (raw data is from yesterday, received today)
-    yesterday = date.today() - timedelta(days=1)
-    yesterday_str = yesterday.strftime('%Y%m%d')
-    month_str = yesterday.strftime('%Y%m')
+    # Get today's date (raw data folder is created with today's date)
+    today = date.today()
+    today_str = today.strftime('%Y%m%d')
+    month_str = today.strftime('%Y%m')
     
-    # Build path to yesterday's raw data folder
-    raw_data_path = os.path.join(raw_path, month_str, yesterday_str)
+    # Build path to today's raw data folder
+    raw_data_path = os.path.join(raw_path, month_str, today_str)
     
     print(f"[DEBUG] Looking for raw data in: {raw_data_path}")
     
@@ -290,17 +290,17 @@ def get_live_data(automation_type='PACO'):
     First checks processed output, then falls back to raw data if not available.
     Returns list of processed bank account records.
     
-    Note: "Today" means yesterday's payments (received and processed today).
+    Note: Looks at TODAY's folder (not yesterday's).
     """
     output_path = PACO_NETWORK_PATH if automation_type == 'PACO' else FRAN_NETWORK_PATH
     
-    # Get yesterday's date (today's payments are from yesterday)
-    yesterday = date.today() - timedelta(days=1)
-    yesterday_str = yesterday.strftime('%Y%m%d')
-    month_str = yesterday.strftime('%Y%m')
+    # Get today's date (live data folder uses today's date)
+    today = date.today()
+    today_str = today.strftime('%Y%m%d')
+    month_str = today.strftime('%Y%m')
     
-    # Build path to yesterday's processed output folder (today's data)
-    output_folder = os.path.join(output_path, month_str, yesterday_str)
+    # Build path to today's processed output folder
+    output_folder = os.path.join(output_path, month_str, today_str)
     
     # Write debug to file
     with open('live_data_debug.txt', 'a') as f:
@@ -845,7 +845,7 @@ def get_company_status():
             'matched_percentage': round(percentage, 1),
             'customers_assigned': assigned_to_account if is_live and not is_raw else 0,
             'invoices_assigned': invoices_assigned if is_live and not is_raw else 0,
-            'total': total_payments,
+            'total': total_payments if is_live else 0,  # Show 0 when "Awaiting Today"
             'total_received': round(total_received, 2) if is_live and not is_raw else 0,
             'total_received_eur': round(total_received_eur, 2) if is_live and not is_raw else 0,
             'value_assigned': round(value_assigned, 2) if is_live and not is_raw else 0,
